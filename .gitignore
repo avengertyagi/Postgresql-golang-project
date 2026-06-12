@@ -1,0 +1,38 @@
+# Dependency directories
+/vendor/
+
+# Compiled binaries and test artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/api
+/seed
+/keygen
+/migrate
+/plan_my_package
+/plan-my-package
+
+# Configuration & Secrets
+.env
+.env.*
+!.env.example
+.env.local
+
+# Logs and local databases
+*.log
+gin.log
+
+# System files & IDE directories
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.swp
+
+# Local uploads and temp directories
+/uploads/
+/tmp/
