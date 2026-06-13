@@ -13,11 +13,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/akshit_tyagi/postgresql_project/src/config"
-	models "github.com/akshit_tyagi/postgresql_project/src/models"
-	healthctl "github.com/akshit_tyagi/postgresql_project/src/controllers"
-	middleware "github.com/akshit_tyagi/postgresql_project/src/middlewares"
-	adminroutes "github.com/akshit_tyagi/postgresql_project/src/routes"
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
+	"github.com/akshit_tyagi/postgresql_project/internal/controllers/health"
+	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
+	"github.com/akshit_tyagi/postgresql_project/internal/models"
+	"github.com/akshit_tyagi/postgresql_project/internal/routes"
 	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -71,7 +71,7 @@ func main() {
 	r := gin.New()
 	r.Use(ginLoggerWithRequestID())
 	r.Use(gin.CustomRecovery(recoveryHandler))
-	r.Use(middleware.RateLimiter())
+	r.Use(middlewares.RateLimiter())
 	r.HandleMethodNotAllowed = true
 	r.NoRoute(func(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
@@ -117,8 +117,8 @@ func main() {
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "1.0.0"})
 	})
-	r.GET("/healthz", healthctl.Healthz)
-	r.GET("/readyz", healthctl.Readyz)
+	r.GET("/healthz", health.Healthz)
+	r.GET("/readyz", health.Readyz)
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/docs", func(c *gin.Context) {
@@ -128,7 +128,7 @@ func main() {
 	v1 := r.Group("/api/v1")
 	{
 		adminGroup := v1.Group("/admin")
-		adminroutes.AdminRoutes(adminGroup)
+		routes.AdminRoutes(adminGroup)
 	}
 
 	srv := &http.Server{

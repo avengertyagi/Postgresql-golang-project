@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/akshit_tyagi/postgresql_project/src/config"
-	"github.com/akshit_tyagi/postgresql_project/src/database/seeders"
-	"github.com/akshit_tyagi/postgresql_project/src/models"
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
+	"github.com/akshit_tyagi/postgresql_project/internal/database/seeders"
+	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	"github.com/joho/godotenv"
 )
 
