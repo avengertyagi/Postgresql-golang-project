@@ -1,13 +1,14 @@
-package models
+package permission
 
 import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
+	"github.com/akshit_tyagi/postgresql_project/internal/models"
 )
 
 func init() {
-	Register(&Permission{})
+	models.Register(&Permission{})
 }
 
 type Permission struct {

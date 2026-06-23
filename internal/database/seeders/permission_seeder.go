@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
-	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models"
+	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 )
 
 func PermissionSeeder() {

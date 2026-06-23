@@ -7,8 +7,9 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
-	"github.com/akshit_tyagi/postgresql_project/internal/repositories"
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
+	userrepo "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +31,7 @@ func AdminSeeder() {
 		log.Fatal(err)
 	}
 
-	admins := []models.User{
+	admins := []usermodel.User{
 		{
 			Name:      "Super Admin",
 			Email:     "superadmin@gmail.com",
@@ -41,12 +42,12 @@ func AdminSeeder() {
 			UpdatedAt: time.Now(),
 		},
 	}
-	var permissions []models.Permission
+	var permissions []rolemodel.Permission
 	if err := config.DB.Find(&permissions).Error; err != nil {
 		log.Fatalf("Failed to fetch permissions for seeding: %v", err)
 	}
-	var adminRole models.Role
-	if err := config.DB.Where(models.Role{Name: "Admin"}).FirstOrCreate(&adminRole).Error; err != nil {
+	var adminRole rolemodel.Role
+	if err := config.DB.Where(rolemodel.Role{Name: "Admin"}).FirstOrCreate(&adminRole).Error; err != nil {
 		log.Fatalf("Failed to find or create Admin role: %v", err)
 	}
 	if err := adminRole.SyncPermissions(permissions); err != nil {
@@ -54,7 +55,7 @@ func AdminSeeder() {
 	}
 	log.Printf("Synced %d permissions to Admin role.", len(permissions))
 	for _, admin := range admins {
-		result := config.DB.Where(models.User{Email: admin.Email}).FirstOrCreate(&admin)
+		result := config.DB.Where(usermodel.User{Email: admin.Email}).FirstOrCreate(&admin)
 		if result.Error != nil {
 			log.Printf("Failed to seed admin %s: %v", admin.Email, result.Error)
 			continue
@@ -64,7 +65,7 @@ func AdminSeeder() {
 		} else {
 			log.Printf("Admin already exists, skipped: %s", admin.Email)
 		}
-		if err := repositories.AssignRole(&admin, &adminRole); err != nil {
+		if err := userrepo.AssignRole(&admin, &adminRole); err != nil {
 			log.Printf("Failed to assign Admin role to %s: %v", admin.Email, err)
 		} else {
 			log.Printf("Assigned Admin role to %s", admin.Email)

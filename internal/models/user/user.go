@@ -1,13 +1,14 @@
-package models
+package user
 
 import (
 	"time"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func init() {
-	Register(&User{})
+	models.Register(&User{})
 }
 
 type User struct {

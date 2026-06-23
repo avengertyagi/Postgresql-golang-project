@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
-	authmodel "github.com/akshit_tyagi/postgresql_project/internal/models"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
 )
 
-func UserSignUpValidation(request authmodel.UserSignUpRequest) error {
+func UserSignUpValidation(request usermodel.UserSignUpRequest) error {
 	if request.Name == "" {
 		return fmt.Errorf("Name is required.")
 	}

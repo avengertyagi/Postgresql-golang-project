@@ -1,11 +1,13 @@
-package models
+package personalaccesstoken
 
 import (
 	"time"
+
+	"github.com/akshit_tyagi/postgresql_project/internal/models"
 )
 
 func init() {
-	Register(&PersonalAccessToken{})
+	models.Register(&PersonalAccessToken{})
 }
 
 type PersonalAccessToken struct {

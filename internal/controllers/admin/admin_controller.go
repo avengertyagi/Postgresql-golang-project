@@ -5,14 +5,14 @@ import (
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
-	"github.com/akshit_tyagi/postgresql_project/internal/services"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
+	adminservice "github.com/akshit_tyagi/postgresql_project/internal/services/admin"
 	"github.com/akshit_tyagi/postgresql_project/internal/validations"
 	"github.com/gin-gonic/gin"
 )
 
 func Login(c *gin.Context) {
-	var req models.AdminLoginRequest
+	var req usermodel.AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
@@ -21,7 +21,7 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	admin, err := services.Login(req)
+	admin, err := adminservice.Login(req)
 	if err != nil {
 		if errors.Is(err, constants.InvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -51,12 +51,12 @@ func Login(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	var req models.LogoutRequest
+	var req usermodel.LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	if err := services.Logout(req.RefreshToken); err != nil {
+	if err := adminservice.Logout(req.RefreshToken); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error()})
 		return
 	}
@@ -68,12 +68,12 @@ func Logout(c *gin.Context) {
 }
 
 func RefreshToken(c *gin.Context) {
-	var req models.RefreshRequest
+	var req usermodel.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	resp, err := services.RefreshToken(req.RefreshToken)
+	resp, err := adminservice.RefreshToken(req.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": err.Error()})
 		return
@@ -97,7 +97,7 @@ func GetProfile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated})
 		return
 	}
-	profile, err := services.GetProfile(id)
+	profile, err := adminservice.GetProfile(id)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"status": false, "statusCode": http.StatusOK, "message": constants.ProfileFetchSuccess})
 		return

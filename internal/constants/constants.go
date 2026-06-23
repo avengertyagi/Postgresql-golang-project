@@ -32,12 +32,14 @@ const (
 	NotFound              = "Record not found."
 	SomethingWentWrong    = "Something went wrong. Please try again later."
 
-	RoleCreatedSuccess = "Role created successfully"
-	RoleUpdatedSuccess = "Role updated successfully"
-	RoleDeletedSuccess = "Role deleted successfully"
-	RoleNotFound       = "Role not found"
+	RoleFetchedSuccess   = "Role fetched successfully"
+	RoleRetrievedSuccess = "Role retrieved successfully"
+	RoleCreatedSuccess   = "Role created successfully"
+	RoleUpdatedSuccess   = "Role updated successfully"
+	RoleDeletedSuccess   = "Role deleted successfully"
 )
 
 var RoleAlreadyExists = errors.New("Role already exists")
 var InvalidCredentials = errors.New("These credentials do not match our records.")
 var InactiveAccount = errors.New("Your account is inactive. Please contact support.")
+var RoleNotFound = errors.New("Role not found")

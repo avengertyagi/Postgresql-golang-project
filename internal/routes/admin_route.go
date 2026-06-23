@@ -2,21 +2,27 @@ package routes
 
 import (
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	"github.com/akshit_tyagi/postgresql_project/internal/controllers/admin"
+	admincontroller "github.com/akshit_tyagi/postgresql_project/internal/controllers/admin"
+	rolecontroller "github.com/akshit_tyagi/postgresql_project/internal/controllers/role"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func AdminRoutes(r *gin.RouterGroup) {
-	r.POST("/login", middlewares.ThrottleFailures(5, 2), admin.Login)
-	r.POST("/refresh", middlewares.ThrottleFailures(5, 2), admin.RefreshToken)
+	r.POST("/login", middlewares.ThrottleFailures(5, 2), admincontroller.Login)
+	r.POST("/refresh", middlewares.ThrottleFailures(5, 2), admincontroller.RefreshToken)
 	protected := r.Group("")
 	protected.Use(middlewares.AuthMiddleware())
 	protected.Use(middlewares.GuardMiddleware(constants.AdminGuard))
 	{
-		protected.POST("/logout", admin.Logout)
-		protected.GET("/profile", admin.GetProfile)
+		protected.POST("/logout", admincontroller.Logout)
+		protected.GET("/profile", admincontroller.GetProfile)
 
-		protected.POST("/role/store", admin.CreateRole)
+		//Roles Routes
+		protected.GET("/roles", rolecontroller.GetAll)
+		protected.POST("/role/create", rolecontroller.Create)
+		protected.GET("/role/edit/:id", rolecontroller.GetByID)
+		protected.PUT("/role/update/:id", rolecontroller.Update)
+		protected.DELETE("/role/destroy/:id", rolecontroller.Delete)
 	}
 }

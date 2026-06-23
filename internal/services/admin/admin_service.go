@@ -1,4 +1,4 @@
-package services
+package admin
 
 import (
 	"errors"
@@ -8,13 +8,15 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
-	"github.com/akshit_tyagi/postgresql_project/internal/repositories"
+	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/models/personalaccesstoken"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
+	repositories "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
+	userrepo "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
 	"github.com/google/uuid"
 )
 
-func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
-	admin, err := repositories.FindByEmail(req.Email)
+func Login(req usermodel.AdminLoginRequest) (*usermodel.AdminResponse, error) {
+	admin, err := userrepo.FindByEmail(req.Email)
 	if err != nil {
 		return nil, constants.InvalidCredentials
 	}
@@ -44,21 +46,21 @@ func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
 	if expiryDays == 0 {
 		expiryDays = 30
 	}
-	pat := &models.PersonalAccessToken{
+	pat := &personalaccesstokenmodel.PersonalAccessToken{
 		UserID:    admin.ID,
 		TokenHash: helpers.HashToken(rawRefreshToken),
 		Name:      "admin-session",
 		Revoked:   false,
 		ExpiresAt: time.Now().Add(time.Duration(expiryDays) * 24 * time.Hour),
 	}
-	if err := repositories.SaveToken(pat); err != nil {
+	if err := userrepo.SaveToken(pat); err != nil {
 		return nil, errors.New("Failed to create session")
 	}
 	accessExpiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
 	if accessExpiryMinutes == 0 {
 		accessExpiryMinutes = 60
 	}
-	return &models.AdminResponse{
+	return &usermodel.AdminResponse{
 		ID:           userID,
 		Name:         admin.Name,
 		Email:        admin.Email,
@@ -90,7 +92,7 @@ func Logout(refreshToken string) error {
 	return nil
 }
 
-func RefreshToken(rawRefreshToken string) (*models.TokenRefreshResponse, error) {
+func RefreshToken(rawRefreshToken string) (*usermodel.TokenRefreshResponse, error) {
 	claims, err := helpers.ParseRefreshToken(rawRefreshToken)
 	if err != nil {
 		return nil, errors.New(constants.SessionNotFound)
@@ -122,19 +124,19 @@ func RefreshToken(rawRefreshToken string) (*models.TokenRefreshResponse, error) 
 	if accessExpiryMinutes == 0 {
 		accessExpiryMinutes = 60
 	}
-	return &models.TokenRefreshResponse{
+	return &usermodel.TokenRefreshResponse{
 		AccessToken: newAccessToken,
 		TokenType:   "Bearer",
 		ExpiresIn:   accessExpiryMinutes * 60,
 	}, nil
 }
 
-func GetProfile(userID uint) (*models.ProfileResponse, error) {
+func GetProfile(userID uint) (*usermodel.ProfileResponse, error) {
 	user, err := repositories.FindByID(userID)
 	if err != nil {
 		return nil, errors.New(constants.NotFound)
 	}
-	return &models.ProfileResponse{
+	return &usermodel.ProfileResponse{
 		ID:             user.ID,
 		Name:           user.Name,
 		Email:          user.Email,

@@ -3,10 +3,10 @@ package validations
 import (
 	"fmt"
 
-	authmodel "github.com/akshit_tyagi/postgresql_project/internal/models"
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
 )
 
-func ValidateRole(req authmodel.RoleRequest) error {
+func ValidateRole(req rolemodel.RoleRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("Role name is required.")
 	}

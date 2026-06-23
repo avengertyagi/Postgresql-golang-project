@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
-	authmodel "github.com/akshit_tyagi/postgresql_project/internal/models"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
 )
 
-func AdminLoginValidation(request authmodel.AdminLoginRequest) error {
+func AdminLoginValidation(request usermodel.AdminLoginRequest) error {
 	if request.Email == "" {
 		return fmt.Errorf("Email is required.")
 	}
