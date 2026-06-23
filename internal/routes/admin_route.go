@@ -9,13 +9,14 @@ import (
 
 func AdminRoutes(r *gin.RouterGroup) {
 	r.POST("/login", middlewares.ThrottleFailures(5, 2), admin.Login)
-	r.POST("/refresh", admin.RefreshToken)
+	r.POST("/refresh", middlewares.ThrottleFailures(5, 2), admin.RefreshToken)
 	protected := r.Group("")
 	protected.Use(middlewares.AuthMiddleware())
 	protected.Use(middlewares.GuardMiddleware(constants.AdminGuard))
 	{
 		protected.POST("/logout", admin.Logout)
 		protected.GET("/profile", admin.GetProfile)
-		//protected.PUT("/profile", admincontrollers.UpdateProfile)
+
+		protected.POST("/role/store", admin.CreateRole)
 	}
 }

@@ -7,25 +7,26 @@ import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
+	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
 	"github.com/akshit_tyagi/postgresql_project/internal/models"
-	"github.com/akshit_tyagi/postgresql_project/internal/utils"
+	"github.com/akshit_tyagi/postgresql_project/internal/repositories"
 	"github.com/google/uuid"
 )
 
 func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
-	admin, err := models.FindByEmail(req.Email)
+	admin, err := repositories.FindByEmail(req.Email)
 	if err != nil {
-		return nil, errors.New(constants.InvalidCredentials)
+		return nil, constants.InvalidCredentials
 	}
 	isSuperAdmin := admin.UserType == constants.SuperAdminRole
 	if !isSuperAdmin && !admin.Status {
-		return nil, errors.New(constants.InactiveAccount)
+		return nil, constants.InactiveAccount
 	}
 	if !admin.CheckPassword(req.Password) {
-		return nil, errors.New(constants.InvalidCredentials)
+		return nil, constants.InvalidCredentials
 	}
 	userID := admin.ID
-	accessToken, err := utils.GenerateAccessToken(
+	accessToken, err := helpers.GenerateAccessToken(
 		userID,
 		admin.Email,
 		strconv.Itoa(int(admin.UserType)),
@@ -35,7 +36,7 @@ func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
 		return nil, errors.New("Failed to generate access token")
 	}
 	jti := uuid.New().String()
-	rawRefreshToken, err := utils.GenerateRefreshToken(userID, jti)
+	rawRefreshToken, err := helpers.GenerateRefreshToken(userID, jti)
 	if err != nil {
 		return nil, errors.New("Failed to generate refresh token")
 	}
@@ -45,12 +46,12 @@ func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
 	}
 	pat := &models.PersonalAccessToken{
 		UserID:    admin.ID,
-		TokenHash: utils.HashToken(rawRefreshToken),
+		TokenHash: helpers.HashToken(rawRefreshToken),
 		Name:      "admin-session",
 		Revoked:   false,
 		ExpiresAt: time.Now().Add(time.Duration(expiryDays) * 24 * time.Hour),
 	}
-	if err := models.SaveToken(pat); err != nil {
+	if err := repositories.SaveToken(pat); err != nil {
 		return nil, errors.New("Failed to create session")
 	}
 	accessExpiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
@@ -64,17 +65,16 @@ func Login(req models.AdminLoginRequest) (*models.AdminResponse, error) {
 		UserType:     admin.UserType,
 		AccessToken:  accessToken,
 		RefreshToken: rawRefreshToken,
-		TokenType:    "Bearer",
 		ExpiresIn:    accessExpiryMinutes * 60,
 	}, nil
 }
 
 func Logout(refreshToken string) error {
-	if _, err := utils.ParseRefreshToken(refreshToken); err != nil {
+	if _, err := helpers.ParseRefreshToken(refreshToken); err != nil {
 		return errors.New(constants.SessionNotFound)
 	}
-	tokenHash := utils.HashToken(refreshToken)
-	pat, err := models.FindTokenByHash(tokenHash)
+	tokenHash := helpers.HashToken(refreshToken)
+	pat, err := repositories.FindTokenByHash(tokenHash)
 	if err != nil {
 		return errors.New(constants.SessionNotFound)
 	}
@@ -84,18 +84,18 @@ func Logout(refreshToken string) error {
 	if time.Now().After(pat.ExpiresAt) {
 		return errors.New(constants.SessionExpired)
 	}
-	if err := models.RevokeRefreshToken(tokenHash); err != nil {
+	if err := repositories.RevokeRefreshToken(tokenHash); err != nil {
 		return errors.New("Failed to revoke session")
 	}
 	return nil
 }
 
 func RefreshToken(rawRefreshToken string) (*models.TokenRefreshResponse, error) {
-	claims, err := utils.ParseRefreshToken(rawRefreshToken)
+	claims, err := helpers.ParseRefreshToken(rawRefreshToken)
 	if err != nil {
 		return nil, errors.New(constants.SessionNotFound)
 	}
-	pat, err := models.FindTokenByHash(utils.HashToken(rawRefreshToken))
+	pat, err := repositories.FindTokenByHash(helpers.HashToken(rawRefreshToken))
 	if err != nil {
 		return nil, errors.New("Session not found")
 	}
@@ -105,11 +105,11 @@ func RefreshToken(rawRefreshToken string) (*models.TokenRefreshResponse, error) 
 	if time.Now().After(pat.ExpiresAt) {
 		return nil, errors.New("Session has expired")
 	}
-	admin, err := models.FindByID(claims.UserID)
+	admin, err := repositories.FindByID(claims.UserID)
 	if err != nil {
 		return nil, errors.New(constants.UserNotFound)
 	}
-	newAccessToken, err := utils.GenerateAccessToken(
+	newAccessToken, err := helpers.GenerateAccessToken(
 		claims.UserID,
 		admin.Email,
 		strconv.Itoa(int(admin.UserType)),
@@ -130,7 +130,7 @@ func RefreshToken(rawRefreshToken string) (*models.TokenRefreshResponse, error) 
 }
 
 func GetProfile(userID uint) (*models.ProfileResponse, error) {
-	user, err := models.FindByID(userID)
+	user, err := repositories.FindByID(userID)
 	if err != nil {
 		return nil, errors.New(constants.NotFound)
 	}

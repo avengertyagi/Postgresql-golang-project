@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
@@ -13,7 +14,7 @@ import (
 func Login(c *gin.Context) {
 	var req models.AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": "Invalid request. Please provide email and password."})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	if err := validations.AdminLoginValidation(req); err != nil {
@@ -22,21 +23,37 @@ func Login(c *gin.Context) {
 	}
 	admin, err := services.Login(req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error()})
+		if errors.Is(err, constants.InvalidCredentials) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":     false,
+				"statusCode": http.StatusUnauthorized,
+				"message":    err.Error(),
+			})
+			return
+		}
+		if errors.Is(err, constants.InactiveAccount) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":     false,
+				"statusCode": http.StatusUnauthorized,
+				"message":    err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
-		"statusCode": 200,
+		"statusCode": http.StatusOK,
 		"message":    constants.LoginSuccess,
-		"data":       gin.H{"admin": admin},
+		"data":       admin,
 	})
 }
 
 func Logout(c *gin.Context) {
 	var req models.LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": "Invalid request. Please provide refresh token."})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	if err := services.Logout(req.RefreshToken); err != nil {
@@ -53,7 +70,7 @@ func Logout(c *gin.Context) {
 func RefreshToken(c *gin.Context) {
 	var req models.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": "Invalid request. Please provide refresh token."})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	resp, err := services.RefreshToken(req.RefreshToken)
@@ -89,6 +106,6 @@ func GetProfile(c *gin.Context) {
 		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.ProfileFetchSuccess,
-		"data":       gin.H{"profile": profile},
+		"data":       profile,
 	})
 }

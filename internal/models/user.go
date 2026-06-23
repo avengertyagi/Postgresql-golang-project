@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -79,7 +78,6 @@ type AdminResponse struct {
 	UserType     uint8  `json:"user_type"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
-	TokenType    string `json:"token_type"`
 	ExpiresIn    int    `json:"expires_in"`
 }
 
@@ -97,52 +95,6 @@ func (u *User) HashPassword(password string) error {
 	return nil
 }
 
-func FindByEmail(email string) (*User, error) {
-	var admin User
-	err := config.DB.Where("email = ?", email).First(&admin).Error
-	if err != nil {
-		return nil, err
-	}
-	return &admin, nil
-}
-
-func FindByID(id uint) (*User, error) {
-	var admin User
-	err := config.DB.First(&admin, id).Error
-	if err != nil {
-		return nil, err
-	}
-	return &admin, nil
-}
-
-func SaveToken(pat *PersonalAccessToken) error {
-	return config.DB.Create(pat).Error
-}
-
-func FindTokenByHash(tokenHash string) (*PersonalAccessToken, error) {
-	var pat PersonalAccessToken
-	err := config.DB.
-		Where("token_hash = ?", tokenHash).
-		First(&pat).Error
-	if err != nil {
-		return nil, err
-	}
-	return &pat, nil
-}
-func RevokeRefreshToken(tokenHash string) error {
-	return config.DB.
-		Model(&PersonalAccessToken{}).
-		Where("token_hash = ?", tokenHash).
-		Update("revoked", true).Error
-}
-
-func RevokeAllUserTokens(userID uint) error {
-	return config.DB.
-		Model(&PersonalAccessToken{}).
-		Where("user_id = ? AND revoked = false", userID).
-		Update("revoked", true).Error
-}
-
 type ProfileResponse struct {
 	ID             uint      `json:"id"`
 	Name           string    `json:"name"`
@@ -157,8 +109,4 @@ type ProfileResponse struct {
 type UpdateProfileRequest struct {
 	Name           string `json:"name"            example:"John Doe"`
 	ProfilePicture string `json:"profile_picture" example:"https://example.com/pic.jpg"`
-}
-
-func (u *User) AssignRole(role *Role) error {
-	return config.DB.Model(u).Association("Roles").Append(role)
 }

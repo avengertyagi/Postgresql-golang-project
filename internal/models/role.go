@@ -11,31 +11,23 @@ func init() {
 }
 
 type Role struct {
-	ID        uint      `json:"id"              gorm:"primaryKey;autoIncrement"`
-	Name      string    `json:"name"            gorm:"type:varchar(100);uniqueIndex;not null"`
-	Status    bool      `json:"status"          gorm:"default:true"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID          uint         `json:"id"              gorm:"primaryKey;autoIncrement"`
+	Name        string       `json:"name"            gorm:"type:varchar(100);uniqueIndex;not null"`
+	Permissions []Permission `json:"permissions" gorm:"many2many:role_permissions;"`
+	Status      bool         `json:"status"          gorm:"default:true"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at"`
 }
 
 type RoleRequest struct {
-	Name       string   `json:"name" gorm:"type:varchar(100);default:null"`
-	Permission []string `json:"permission" gorm:"type:varchar(100);default:null"`
+	Name          string `json:"name" gorm:"type:varchar(100);default:null"`
+	PermissionIDs []uint `json:"permission"`
 }
 
-func SaveRole(role *Role) error {
-	return config.DB.Create(role).Error
-}
-
-func FindRoleByName(name string) (*Role, error) {
-	var role Role
-	err := config.DB.Where("name = ?", name).First(&role).Error
-	if err != nil {
-		return nil, err
+func (r *Role) SyncPermissions(permissionIDs []uint) error {
+	var permissions []Permission
+	if err := config.DB.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
+		return err
 	}
-	return &role, nil
-}
-
-func (r *Role) SyncPermissions(permissions []Permission) error {
 	return config.DB.Model(r).Association("Permissions").Replace(permissions)
 }

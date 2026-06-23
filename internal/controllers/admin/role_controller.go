@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
@@ -13,7 +14,7 @@ import (
 func CreateRole(c *gin.Context) {
 	var req models.RoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": "Invalid request. Please provide role name."})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	if err := validations.ValidateRole(req); err != nil {
@@ -22,13 +23,21 @@ func CreateRole(c *gin.Context) {
 	}
 	role, err := services.CreateRole(req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error()})
+		if errors.Is(err, constants.RoleAlreadyExists) {
+			c.JSON(http.StatusConflict, gin.H{
+				"status":     false,
+				"statusCode": http.StatusConflict,
+				"message":    err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.RoleCreatedSuccess,
-		"data":       gin.H{"role": role},
+		"data":       role,
 	})
 }

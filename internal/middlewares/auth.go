@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	"github.com/akshit_tyagi/postgresql_project/internal/utils"
+	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -35,7 +35,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.BadAuthFormat})
 			return
 		}
-		claims, err := utils.ParseAccessToken(parts[1])
+		claims, err := helpers.ParseAccessToken(parts[1])
 		if err != nil {
 			slog.Warn("auth: invalid access token",
 				"request_id", requestID(c),

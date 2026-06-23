@@ -1,5 +1,7 @@
 package constants
 
+import "errors"
+
 const (
 	SuperAdminRole uint8 = 0
 	StaffRole      uint8 = 1
@@ -13,8 +15,6 @@ const (
 
 const (
 	UserNotFound          = "User not found"
-	InvalidCredentials    = "These credentials do not match our records."
-	InactiveAccount       = "Your account is inactive. Please contact support."
 	AuthorizationHeader   = "Authorization header is required"
 	BadAuthFormat         = "Authorization format must be: Bearer <token>"
 	Unauthenticated       = "Unauthenticated"
@@ -30,10 +30,14 @@ const (
 	ProfileFetchSuccess   = "Profile fetched successfully"
 	ProfileUpdateSuccess  = "Profile updated successfully"
 	NotFound              = "Record not found."
+	SomethingWentWrong    = "Something went wrong. Please try again later."
 
-	RoleAlreadyExists  = "Role already exists"
 	RoleCreatedSuccess = "Role created successfully"
 	RoleUpdatedSuccess = "Role updated successfully"
 	RoleDeletedSuccess = "Role deleted successfully"
 	RoleNotFound       = "Role not found"
 )
+
+var RoleAlreadyExists = errors.New("Role already exists")
+var InvalidCredentials = errors.New("These credentials do not match our records.")
+var InactiveAccount = errors.New("Your account is inactive. Please contact support.")

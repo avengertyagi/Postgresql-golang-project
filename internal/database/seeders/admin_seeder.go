@@ -8,6 +8,7 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	"github.com/akshit_tyagi/postgresql_project/internal/models"
+	"github.com/akshit_tyagi/postgresql_project/internal/repositories"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -63,7 +64,7 @@ func AdminSeeder() {
 		} else {
 			log.Printf("Admin already exists, skipped: %s", admin.Email)
 		}
-		if err := admin.AssignRole(&adminRole); err != nil {
+		if err := repositories.AssignRole(&admin, &adminRole); err != nil {
 			log.Printf("Failed to assign Admin role to %s: %v", admin.Email, err)
 		} else {
 			log.Printf("Assigned Admin role to %s", admin.Email)
