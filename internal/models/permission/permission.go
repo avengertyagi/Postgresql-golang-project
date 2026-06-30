@@ -4,14 +4,11 @@ import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
+	"gorm.io/gorm"
 )
 
-func init() {
-	models.Register(&Permission{})
-}
-
 type Permission struct {
+	gorm.Model
 	ID        uint      `json:"id"              gorm:"primaryKey;autoIncrement"`
 	Name      string    `json:"name"            gorm:"type:varchar(100);uniqueIndex;not null"`
 	GuardName string    `json:"guard_name"      gorm:"type:varchar(100);default:null"`

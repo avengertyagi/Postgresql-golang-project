@@ -48,6 +48,7 @@ func PermissionSeeder() {
 	}
 	for _, permission := range permissions {
 		result := config.DB.Where(permissionmodel.Permission{Name: permission.Name}).FirstOrCreate(&permission)
+		log.Println("result--------line 51", result)
 		if result.Error != nil {
 			log.Printf("Failed to seed permission %s: %v", permission.Name, result.Error)
 		} else if result.RowsAffected > 0 {

@@ -1,4 +1,4 @@
-package role
+package tenant
 
 import (
 	"errors"
@@ -6,11 +6,10 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
-	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
+	tenantmodel "github.com/akshit_tyagi/postgresql_project/internal/models/tenant"
 )
 
-func GetAll(req rolemodel.RoleListRequest) (*rolemodel.RoleListResponse, error) {
+func GetAll(req tenantmodel.TenantListRequest) (*tenantmodel.TenantListResponse, error) {
 	if req.CurrentPage <= 0 {
 		req.CurrentPage = 1
 	}
@@ -18,8 +17,8 @@ func GetAll(req rolemodel.RoleListRequest) (*rolemodel.RoleListResponse, error) 
 		req.PerPage = 10
 	}
 	var total int64
-	var roleList []rolemodel.Role
-	query := config.DB.Model(&rolemodel.Role{})
+	var roleList []tenantmodel.Tenant
+	query := config.DB.Model(&tenantmodel.Tenant{})
 	if req.Search != "" {
 		query = query.Where("LOWER(name) LIKE LOWER(?)", "%"+req.Search+"%")
 	}
@@ -41,7 +40,7 @@ func GetAll(req rolemodel.RoleListRequest) (*rolemodel.RoleListResponse, error) 
 		return nil, err
 	}
 	lastPage := int(math.Ceil(float64(total) / float64(req.PerPage)))
-	return &rolemodel.RoleListResponse{
+	return &tenantmodel.TenantListResponse{
 		Data:        roleList,
 		CurrentPage: req.CurrentPage,
 		PerPage:     req.PerPage,
@@ -50,27 +49,22 @@ func GetAll(req rolemodel.RoleListRequest) (*rolemodel.RoleListResponse, error) 
 	}, nil
 }
 
-func Create(req rolemodel.RoleRequest) (*rolemodel.Role, error) {
-	existing, err := FindRoleByName(req.Name)
+func Create(req tenantmodel.TenantRequest) (*tenantmodel.Tenant, error) {
+	existing, err := FindByName(req.Name)
 	if err == nil && existing != nil {
 		return nil, constants.RoleAlreadyExists
 	}
-	role := &rolemodel.Role{
+	role := &tenantmodel.Tenant{
 		Name:   req.Name,
 		Status: true,
 	}
 	if err := createRole(role); err != nil {
 		return nil, err
 	}
-	if len(req.PermissionIDs) > 0 {
-		if err := SyncRolePermissions(role, req.PermissionIDs); err != nil {
-			return nil, err
-		}
-	}
 	return role, nil
 }
 
-func GetByID(ID string) (*rolemodel.Role, error) {
+func GetByID(ID string) (*tenantmodel.Tenant, error) {
 	role, err := FindByID(ID)
 	if err != nil {
 		if errors.Is(err, constants.RoleNotFound) {
@@ -81,12 +75,12 @@ func GetByID(ID string) (*rolemodel.Role, error) {
 	return role, nil
 }
 
-func Update(id string, req rolemodel.RoleRequest) (*rolemodel.Role, error) {
+func Update(id string, req tenantmodel.TenantRequest) (*tenantmodel.Tenant, error) {
 	role, err := FindByID(id)
 	if err != nil {
 		return nil, constants.RoleNotFound
 	}
-	existing, err := FindRoleByName(req.Name, role.ID)
+	existing, err := FindByName(req.Name, role.ID)
 	if err == nil && existing != nil {
 		return nil, constants.RoleAlreadyExists
 	}
@@ -94,13 +88,10 @@ func Update(id string, req rolemodel.RoleRequest) (*rolemodel.Role, error) {
 	if err := updateRole(role); err != nil {
 		return nil, err
 	}
-	if err := SyncRolePermissions(role, req.PermissionIDs); err != nil {
-		return nil, err
-	}
 	return role, nil
 }
 
-func Delete(id string) (*rolemodel.Role, error) {
+func Delete(id string) (*tenantmodel.Tenant, error) {
 	role, err := FindByID(id)
 	if err != nil {
 		return nil, constants.RoleNotFound
@@ -111,20 +102,20 @@ func Delete(id string) (*rolemodel.Role, error) {
 	return role, nil
 }
 
-func createRole(role *rolemodel.Role) error {
+func createRole(role *tenantmodel.Tenant) error {
 	return config.DB.Create(role).Error
 }
 
-func updateRole(role *rolemodel.Role) error {
+func updateRole(role *tenantmodel.Tenant) error {
 	return config.DB.Save(role).Error
 }
 
-func deleteRole(role *rolemodel.Role) error {
+func deleteRole(role *tenantmodel.Tenant) error {
 	return config.DB.Delete(role).Error
 }
 
-func FindByID(id string) (*rolemodel.Role, error) {
-	var role rolemodel.Role
+func FindByID(id string) (*tenantmodel.Tenant, error) {
+	var role tenantmodel.Tenant
 	err := config.DB.Where("id = ?", id).First(&role).Error
 	if err != nil {
 		return nil, err
@@ -132,8 +123,8 @@ func FindByID(id string) (*rolemodel.Role, error) {
 	return &role, nil
 }
 
-func FindRoleByName(name string, excludeID ...uint) (*rolemodel.Role, error) {
-	var role rolemodel.Role
+func FindByName(name string, excludeID ...uint) (*tenantmodel.Tenant, error) {
+	var role tenantmodel.Tenant
 	query := config.DB.Where("LOWER(name) = LOWER(?)", name)
 	if len(excludeID) > 0 {
 		query = query.Where("id <> ?", excludeID[0])
@@ -143,11 +134,4 @@ func FindRoleByName(name string, excludeID ...uint) (*rolemodel.Role, error) {
 		return nil, err
 	}
 	return &role, nil
-}
-func SyncRolePermissions(role *rolemodel.Role, permissionIDs []uint) error {
-	var permissions []permissionmodel.Permission
-	if err := config.DB.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
-		return err
-	}
-	return config.DB.Model(role).Association("Permissions").Replace(permissions)
 }

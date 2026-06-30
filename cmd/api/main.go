@@ -16,7 +16,6 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/controllers/health"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
 	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
@@ -49,10 +48,6 @@ func main() {
 
 	if err := config.InitializeDatabase(); err != nil {
 		slog.Error("database init failed", "error", err)
-		os.Exit(1)
-	}
-	if err := models.AutoMigrate(); err != nil {
-		slog.Error("database migration failed", "error", err)
 		os.Exit(1)
 	}
 	defer func() {
@@ -244,13 +239,19 @@ func hostAllowlist(allowed []string) gin.HandlerFunc {
 	}
 }
 func normalizeHost(raw string) (string, error) {
+	raw = strings.TrimPrefix(raw, "https://")
+	raw = strings.TrimPrefix(raw, "http://")
 	parsed, err := url.Parse("//" + raw)
 	if err != nil {
 		return "", err
 	}
 	host := parsed.Hostname()
 	if host == "" {
-		return raw, nil
+		return strings.ToLower(raw), nil
+	}
+	port := parsed.Port()
+	if port != "" {
+		return strings.ToLower(host + ":" + port), nil
 	}
 	return strings.ToLower(host), nil
 }

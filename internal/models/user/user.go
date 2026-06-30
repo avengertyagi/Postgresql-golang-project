@@ -3,16 +3,14 @@ package user
 import (
 	"time"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-func init() {
-	models.Register(&User{})
-}
-
 type User struct {
+	gorm.Model
 	ID             uint      `json:"id"              gorm:"primaryKey;autoIncrement"`
+	TenantID       uint      `json:"tenant_id"       gorm:"type:bigint;default:null"`
 	RoleID         uint      `json:"role_id"         gorm:"type:bigint;default:null"`
 	Name           string    `json:"name"            gorm:"type:varchar(100);default:null"`
 	Email          string    `json:"email"           gorm:"type:varchar(150);uniqueIndex;not null"`
@@ -80,6 +78,13 @@ type AdminResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 	ExpiresIn    int    `json:"expires_in"`
+}
+
+type AdminAPIResponse struct {
+	Status     bool          `json:"status"`
+	StatusCode int           `json:"statusCode"`
+	Message    string        `json:"message"`
+	Data       AdminResponse `json:"data"`
 }
 
 func (u *User) CheckPassword(password string) bool {

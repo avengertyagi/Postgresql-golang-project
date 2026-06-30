@@ -4,6 +4,7 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	admincontroller "github.com/akshit_tyagi/postgresql_project/internal/controllers/admin"
 	rolecontroller "github.com/akshit_tyagi/postgresql_project/internal/controllers/role"
+	tenantcontroller "github.com/akshit_tyagi/postgresql_project/internal/controllers/tenant"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	"github.com/gin-gonic/gin"
 )
@@ -12,6 +13,7 @@ func AdminRoutes(r *gin.RouterGroup) {
 	r.POST("/login", middlewares.ThrottleFailures(5, 2), admincontroller.Login)
 	r.POST("/refresh", middlewares.ThrottleFailures(5, 2), admincontroller.RefreshToken)
 	protected := r.Group("")
+	protected.POST("/tenant", tenantcontroller.Create)
 	protected.Use(middlewares.AuthMiddleware())
 	protected.Use(middlewares.GuardMiddleware(constants.AdminGuard))
 	{

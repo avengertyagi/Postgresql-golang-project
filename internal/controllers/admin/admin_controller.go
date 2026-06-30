@@ -42,12 +42,13 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"status":     true,
-		"statusCode": http.StatusOK,
-		"message":    constants.LoginSuccess,
-		"data":       admin,
-	})
+	response := usermodel.AdminAPIResponse{
+		Status:     true,
+		StatusCode: http.StatusOK,
+		Message:    constants.LoginSuccess,
+		Data:       *admin,
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func Logout(c *gin.Context) {

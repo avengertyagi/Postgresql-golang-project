@@ -6,17 +6,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
 	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/models/personalaccesstoken"
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
-	repositories "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
-	userrepo "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
 	"github.com/google/uuid"
 )
 
 func Login(req usermodel.AdminLoginRequest) (*usermodel.AdminResponse, error) {
-	admin, err := userrepo.FindByEmail(req.Email)
+	admin, err := FindByEmail(req.Email)
 	if err != nil {
 		return nil, constants.InvalidCredentials
 	}
@@ -53,7 +53,7 @@ func Login(req usermodel.AdminLoginRequest) (*usermodel.AdminResponse, error) {
 		Revoked:   false,
 		ExpiresAt: time.Now().Add(time.Duration(expiryDays) * 24 * time.Hour),
 	}
-	if err := userrepo.SaveToken(pat); err != nil {
+	if err := SaveToken(pat); err != nil {
 		return nil, errors.New("Failed to create session")
 	}
 	accessExpiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
@@ -76,7 +76,7 @@ func Logout(refreshToken string) error {
 		return errors.New(constants.SessionNotFound)
 	}
 	tokenHash := helpers.HashToken(refreshToken)
-	pat, err := repositories.FindTokenByHash(tokenHash)
+	pat, err := FindTokenByHash(tokenHash)
 	if err != nil {
 		return errors.New(constants.SessionNotFound)
 	}
@@ -86,7 +86,7 @@ func Logout(refreshToken string) error {
 	if time.Now().After(pat.ExpiresAt) {
 		return errors.New(constants.SessionExpired)
 	}
-	if err := repositories.RevokeRefreshToken(tokenHash); err != nil {
+	if err := RevokeRefreshToken(tokenHash); err != nil {
 		return errors.New("Failed to revoke session")
 	}
 	return nil
@@ -97,7 +97,7 @@ func RefreshToken(rawRefreshToken string) (*usermodel.TokenRefreshResponse, erro
 	if err != nil {
 		return nil, errors.New(constants.SessionNotFound)
 	}
-	pat, err := repositories.FindTokenByHash(helpers.HashToken(rawRefreshToken))
+	pat, err := FindTokenByHash(helpers.HashToken(rawRefreshToken))
 	if err != nil {
 		return nil, errors.New("Session not found")
 	}
@@ -107,7 +107,7 @@ func RefreshToken(rawRefreshToken string) (*usermodel.TokenRefreshResponse, erro
 	if time.Now().After(pat.ExpiresAt) {
 		return nil, errors.New("Session has expired")
 	}
-	admin, err := repositories.FindByID(claims.UserID)
+	admin, err := FindByID(claims.UserID)
 	if err != nil {
 		return nil, errors.New(constants.UserNotFound)
 	}
@@ -132,7 +132,7 @@ func RefreshToken(rawRefreshToken string) (*usermodel.TokenRefreshResponse, erro
 }
 
 func GetProfile(userID uint) (*usermodel.ProfileResponse, error) {
-	user, err := repositories.FindByID(userID)
+	user, err := FindByID(userID)
 	if err != nil {
 		return nil, errors.New(constants.NotFound)
 	}
@@ -146,4 +146,54 @@ func GetProfile(userID uint) (*usermodel.ProfileResponse, error) {
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}, nil
+}
+
+func FindByEmail(email string) (*usermodel.User, error) {
+	var admin usermodel.User
+	err := config.DB.Where("email = ?", email).First(&admin).Error
+	if err != nil {
+		return nil, err
+	}
+	return &admin, nil
+}
+
+func FindByID(id uint) (*usermodel.User, error) {
+	var admin usermodel.User
+	err := config.DB.First(&admin, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &admin, nil
+}
+
+func SaveToken(pat *personalaccesstokenmodel.PersonalAccessToken) error {
+	return config.DB.Create(pat).Error
+}
+
+func FindTokenByHash(tokenHash string) (*personalaccesstokenmodel.PersonalAccessToken, error) {
+	var pat personalaccesstokenmodel.PersonalAccessToken
+	err := config.DB.
+		Where("token_hash = ?", tokenHash).
+		First(&pat).Error
+	if err != nil {
+		return nil, err
+	}
+	return &pat, nil
+}
+func RevokeRefreshToken(tokenHash string) error {
+	return config.DB.
+		Model(&personalaccesstokenmodel.PersonalAccessToken{}).
+		Where("token_hash = ?", tokenHash).
+		Update("revoked", true).Error
+}
+
+func RevokeAllUserTokens(userID uint) error {
+	return config.DB.
+		Model(&personalaccesstokenmodel.PersonalAccessToken{}).
+		Where("user_id = ? AND revoked = false", userID).
+		Update("revoked", true).Error
+}
+
+func AssignRole(user *usermodel.User, role *rolemodel.Role) error {
+	return config.DB.Model(user).Association("Roles").Append(role)
 }

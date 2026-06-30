@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -81,8 +82,7 @@ func InitializeDatabase() error {
 	} else {
 		gormLogger = logger.Default.LogMode(logger.Warn)
 	}
-	db, err := gorm.Open(
-		postgres.Open(dbConfig.GetDBConnectionString()),
+	db, err := gorm.Open(postgres.Open(dbConfig.GetDBConnectionString()),
 		&gorm.Config{Logger: gormLogger},
 	)
 	if err != nil {
@@ -95,6 +95,7 @@ func InitializeDatabase() error {
 	sqlDB.SetMaxOpenConns(dbConfig.DBMaxOpenConns)
 	sqlDB.SetMaxIdleConns(dbConfig.DBMaxIdleConns)
 	sqlDB.SetConnMaxLifetime(dbConfig.DBConnMaxLifetime)
+	db.AutoMigrate(&permissionmodel.Permission)
 	DB = db
 	return nil
 }

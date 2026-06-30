@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
-	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
+	tenantmodel "github.com/akshit_tyagi/postgresql_project/internal/models/tenant"
 )
 
-func ValidateRole(req rolemodel.RoleRequest) error {
+func ValidateTenant(req tenantmodel.TenantRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("Name is required.")
 	}
@@ -19,9 +19,6 @@ func ValidateRole(req rolemodel.RoleRequest) error {
 	}
 	if req.Name != "" && regexp.MustCompile(`\s{2,}`).MatchString(req.Name) {
 		return fmt.Errorf("Name cannot contain multiple consecutive spaces.")
-	}
-	if len(req.PermissionIDs) == 0 {
-		return fmt.Errorf("Role permission is required.")
 	}
 	return nil
 }

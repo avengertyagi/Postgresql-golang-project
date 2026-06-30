@@ -5,7 +5,6 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/database/seeders"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	"github.com/joho/godotenv"
 )
 
@@ -15,9 +14,6 @@ func main() {
 	}
 	if err := config.InitializeDatabase(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
-	}
-	if err := models.AutoMigrate(); err != nil {
-		log.Fatalf("Failed to auto migrate database: %v", err)
 	}
 	log.Println("Running seeders...")
 	seeders.PermissionSeeder()

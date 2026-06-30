@@ -7,9 +7,10 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
+	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
-	userrepo "github.com/akshit_tyagi/postgresql_project/internal/repositories/user"
+	userservice "github.com/akshit_tyagi/postgresql_project/internal/services/admin"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -42,7 +43,7 @@ func AdminSeeder() {
 			UpdatedAt: time.Now(),
 		},
 	}
-	var permissions []rolemodel.Permission
+	var permissions []permissionmodel.Permission
 	if err := config.DB.Find(&permissions).Error; err != nil {
 		log.Fatalf("Failed to fetch permissions for seeding: %v", err)
 	}
@@ -50,7 +51,11 @@ func AdminSeeder() {
 	if err := config.DB.Where(rolemodel.Role{Name: "Admin"}).FirstOrCreate(&adminRole).Error; err != nil {
 		log.Fatalf("Failed to find or create Admin role: %v", err)
 	}
-	if err := adminRole.SyncPermissions(permissions); err != nil {
+	permissionIDs := make([]uint, len(permissions))
+	for i, p := range permissions {
+		permissionIDs[i] = p.ID
+	}
+	if err := adminRole.SyncPermissions(permissionIDs); err != nil {
 		log.Fatalf("Failed to sync permissions to Admin role: %v", err)
 	}
 	log.Printf("Synced %d permissions to Admin role.", len(permissions))
@@ -65,7 +70,7 @@ func AdminSeeder() {
 		} else {
 			log.Printf("Admin already exists, skipped: %s", admin.Email)
 		}
-		if err := userrepo.AssignRole(&admin, &adminRole); err != nil {
+		if err := userservice.AssignRole(&admin, &adminRole); err != nil {
 			log.Printf("Failed to assign Admin role to %s: %v", admin.Email, err)
 		} else {
 			log.Printf("Assigned Admin role to %s", admin.Email)

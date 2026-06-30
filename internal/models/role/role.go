@@ -4,17 +4,14 @@ import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
-	"github.com/akshit_tyagi/postgresql_project/internal/models"
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 	"gorm.io/gorm"
 )
 
-func init() {
-	models.Register(&Role{})
-}
-
 type Role struct {
+	gorm.Model
 	ID          uint                         `json:"id"              gorm:"primaryKey;autoIncrement"`
+	TenantID    uint                         `json:"tenant_id"       gorm:"type:bigint;default:null"`
 	Name        string                       `json:"name"            gorm:"type:varchar(100);uniqueIndex;not null"`
 	Permissions []permissionmodel.Permission `json:"permissions" gorm:"many2many:role_permissions;"`
 	Status      bool                         `json:"status"          gorm:"default:true"`
@@ -24,7 +21,7 @@ type Role struct {
 }
 
 type RoleRequest struct {
-	Name          string `json:"name" gorm:"type:varchar(100);default:null"`
+	Name          string `json:"name"`
 	PermissionIDs []uint `json:"permission"`
 }
 
