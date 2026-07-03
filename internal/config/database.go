@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -95,7 +94,6 @@ func InitializeDatabase() error {
 	sqlDB.SetMaxOpenConns(dbConfig.DBMaxOpenConns)
 	sqlDB.SetMaxIdleConns(dbConfig.DBMaxIdleConns)
 	sqlDB.SetConnMaxLifetime(dbConfig.DBConnMaxLifetime)
-	db.AutoMigrate(&permissionmodel.Permission)
 	DB = db
 	return nil
 }

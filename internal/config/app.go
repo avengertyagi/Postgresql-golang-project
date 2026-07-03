@@ -16,7 +16,7 @@ type App struct {
 	AppURL                 string
 	AppPort                string
 	AllowedOrigin          string
-	AllowedHosts           []string
+	AllowedHosts           string
 	JWTAccessSecret        string
 	JWTRefreshSecret       string
 	JWTAccessExpiryMinutes int
@@ -37,7 +37,7 @@ func LoadApp() (App, error) {
 		AppURL:                 os.Getenv("APP_URL"),
 		AppPort:                os.Getenv("APP_PORT"),
 		AllowedOrigin:          os.Getenv("ALLOWED_ORIGIN"),
-		AllowedHosts:           splitCSV(os.Getenv("ALLOWED_HOSTS")),
+		AllowedHosts:           os.Getenv("ALLOWED_HOSTS"),
 		JWTAccessSecret:        os.Getenv("JWT_ACCESS_SECRET"),
 		JWTRefreshSecret:       os.Getenv("JWT_REFRESH_SECRET"),
 		JWTAccessExpiryMinutes: accessExpiry,

@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -19,6 +18,8 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
 	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/requestid"
+	"github.com/gin-contrib/secure"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -64,7 +65,7 @@ func main() {
 
 	setupGinLogger()
 	r := gin.New()
-	r.Use(ginLoggerWithRequestID())
+	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
 	r.Use(middlewares.RateLimiter())
 	r.HandleMethodNotAllowed = true
@@ -83,7 +84,20 @@ func main() {
 		})
 	})
 	r.Use(ginhelmet.Default())
-	r.Use(hostAllowlist(appConfig.AllowedHosts))
+	r.Use(secure.New(secure.Config{
+		AllowedHosts:          []string{appConfig.AllowedHosts},
+		SSLRedirect:           false,
+		SSLHost:               "ssl.example.com",
+		STSSeconds:            315360000,
+		STSIncludeSubdomains:  true,
+		FrameDeny:             true,
+		ContentTypeNosniff:    true,
+		BrowserXssFilter:      true,
+		ContentSecurityPolicy: "default-src 'self'",
+		IENoOpen:              true,
+		ReferrerPolicy:        "strict-origin-when-cross-origin",
+		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
+	}))
 	r.Use(func(c *gin.Context) {
 		c.Header("Content-Type", "application/json; charset=utf-8")
 		c.Header("X-Content-Type-Options", "nosniff")
@@ -103,6 +117,7 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+	r.Use(middlewares.RequestSizeLimiter(10 * 1024 * 1024))
 	if appConfig.SessionSecret == "" {
 		slog.Error("SESSION_SECRET is required to use the sessions middleware")
 		os.Exit(1)
@@ -182,21 +197,21 @@ func setupGinLogger() {
 	gin.DefaultErrorWriter = io.MultiWriter(f, os.Stdout)
 }
 
-func ginLoggerWithRequestID() gin.HandlerFunc {
-	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-		return fmt.Sprintf("[req_id=%s] %s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-			param.ClientIP,
-			param.TimeStamp.Format(time.RFC1123),
-			param.Method,
-			param.Path,
-			param.Request.Proto,
-			param.StatusCode,
-			param.Latency,
-			param.Request.UserAgent(),
-			param.ErrorMessage,
-		)
-	})
-}
+// func ginLoggerWithRequestID() gin.HandlerFunc {
+// 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+// 		return fmt.Sprintf("[req_id=%s] %s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+// 			param.ClientIP,
+// 			param.TimeStamp.Format(time.RFC1123),
+// 			param.Method,
+// 			param.Path,
+// 			param.Request.Proto,
+// 			param.StatusCode,
+// 			param.Latency,
+// 			param.Request.UserAgent(),
+// 			param.ErrorMessage,
+// 		)
+// 	})
+// }
 
 func recoveryHandler(c *gin.Context, recovered any) {
 	slog.Error("panic recovered",
@@ -209,49 +224,4 @@ func recoveryHandler(c *gin.Context, recovered any) {
 		"statusCode": http.StatusInternalServerError,
 		"message":    "Something went wrong. Please try again.",
 	})
-}
-
-func hostAllowlist(allowed []string) gin.HandlerFunc {
-	if len(allowed) == 0 {
-		return func(c *gin.Context) { c.Next() }
-	}
-	set := make(map[string]struct{}, len(allowed))
-	for _, h := range allowed {
-		if normalized, err := normalizeHost(h); err == nil {
-			set[normalized] = struct{}{}
-		}
-	}
-	return func(c *gin.Context) {
-		reqHost, err := normalizeHost(c.Request.Host)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid host header"})
-			return
-		}
-		if _, ok := set[reqHost]; !ok {
-			slog.Warn("rejected request from disallowed host",
-
-				"host", c.Request.Host,
-			)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Invalid host header"})
-			return
-		}
-		c.Next()
-	}
-}
-func normalizeHost(raw string) (string, error) {
-	raw = strings.TrimPrefix(raw, "https://")
-	raw = strings.TrimPrefix(raw, "http://")
-	parsed, err := url.Parse("//" + raw)
-	if err != nil {
-		return "", err
-	}
-	host := parsed.Hostname()
-	if host == "" {
-		return strings.ToLower(raw), nil
-	}
-	port := parsed.Port()
-	if port != "" {
-		return strings.ToLower(host + ":" + port), nil
-	}
-	return strings.ToLower(host), nil
 }

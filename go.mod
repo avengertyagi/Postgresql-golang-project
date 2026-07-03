@@ -5,6 +5,7 @@ go 1.26.3
 require (
 	github.com/danielkov/gin-helmet/ginhelmet v1.0.2
 	github.com/gin-contrib/cors v1.7.7
+	github.com/gin-contrib/secure v1.1.3
 	github.com/gin-contrib/sessions v1.1.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -28,6 +29,7 @@ require (
 	github.com/danielkov/gin-helmet/core v1.0.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
+	github.com/gin-contrib/requestid v1.0.6 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.6 // indirect
