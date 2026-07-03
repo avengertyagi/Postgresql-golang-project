@@ -14,7 +14,7 @@ import (
 func GetAll(c *gin.Context) {
 	var req rolemodel.RoleListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": nil})
 		return
 	}
 	role, err := roleservice.GetAll(req)

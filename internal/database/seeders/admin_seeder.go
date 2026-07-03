@@ -3,7 +3,6 @@ package seeders
 import (
 	"log"
 	"os"
-	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
@@ -11,6 +10,7 @@ import (
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
 	userservice "github.com/akshit_tyagi/postgresql_project/internal/services/admin"
+	roleservice "github.com/akshit_tyagi/postgresql_project/internal/services/role"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -34,13 +34,11 @@ func AdminSeeder() {
 
 	admins := []usermodel.User{
 		{
-			Name:      "Super Admin",
-			Email:     "superadmin@gmail.com",
-			Password:  string(hashedPassword),
-			Status:    true,
-			UserType:  constants.SuperAdminRole,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			Name:     "Super Admin",
+			Email:    "superadmin@gmail.com",
+			Password: string(hashedPassword),
+			Status:   true,
+			UserType: constants.SuperAdminRole,
 		},
 	}
 	var permissions []permissionmodel.Permission
@@ -55,7 +53,7 @@ func AdminSeeder() {
 	for i, p := range permissions {
 		permissionIDs[i] = p.ID
 	}
-	if err := adminRole.SyncPermissions(permissionIDs); err != nil {
+	if err := roleservice.SyncRolePermissions(&adminRole, permissionIDs); err != nil {
 		log.Fatalf("Failed to sync permissions to Admin role: %v", err)
 	}
 	log.Printf("Synced %d permissions to Admin role.", len(permissions))

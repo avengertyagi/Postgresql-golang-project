@@ -8,17 +8,14 @@ import (
 
 type Tenant struct {
 	gorm.Model
-	ID             uint      `json:"id"              gorm:"primaryKey;autoIncrement"`
 	Name           string    `json:"name"            gorm:"type:varchar(100);uniqueIndex;not null"`
 	Email          string    `json:"email"           gorm:"type:varchar(100);not null"`
 	Password       string    `json:"password"        gorm:"type:varchar(100);default:null"`
 	Mobile         string    `json:"mobile"          gorm:"type:char(15); not null"`
-	Address        string    `json:"address"         gorm:"type:mediumtext();default:null"`
+	Address        string    `json:"address"         gorm:"type:text;default:null"`
 	ProfilePicture string    `json:"profile_picture" gorm:"type:varchar(100);default:null"`
 	PlanExpire     time.Time `json:"plan_expire"     gorm:"type:date"`
 	Status         bool      `json:"status"          gorm:"default:true"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 type TenantRequest struct {

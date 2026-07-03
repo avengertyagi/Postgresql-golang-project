@@ -3,7 +3,6 @@ package role
 import (
 	"time"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
 	"gorm.io/gorm"
 )
@@ -61,12 +60,4 @@ type RoleListResponse struct {
 	PerPage     int    `json:"perPage"`
 	Total       int64  `json:"total"`
 	LastPage    int    `json:"lastPage"`
-}
-
-func (r *Role) SyncPermissions(permissionIDs []uint) error {
-	var permissions []permissionmodel.Permission
-	if err := config.DB.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
-		return err
-	}
-	return config.DB.Model(r).Association("Permissions").Replace(permissions)
 }

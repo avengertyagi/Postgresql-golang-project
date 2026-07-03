@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -64,10 +65,16 @@ func (c Database) GetDBConnectionString() string {
 }
 
 func (c Database) GetDBConnectionURL() string {
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		c.DBUser, c.DBPassword, c.DBHost, c.DBPort, c.DBName, c.DBSSLMode,
-	)
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(c.DBUser, c.DBPassword),
+		Host:   fmt.Sprintf("%s:%s", c.DBHost, c.DBPort),
+		Path:   "/" + c.DBName,
+	}
+	q := u.Query()
+	q.Set("sslmode", c.DBSSLMode)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 func InitializeDatabase() error {
@@ -85,7 +92,7 @@ func InitializeDatabase() error {
 		&gorm.Config{Logger: gormLogger},
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("database: connection failed: %w", err)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
@@ -95,6 +102,16 @@ func InitializeDatabase() error {
 	sqlDB.SetMaxIdleConns(dbConfig.DBMaxIdleConns)
 	sqlDB.SetConnMaxLifetime(dbConfig.DBConnMaxLifetime)
 	DB = db
+	return nil
+}
+
+func Migrate(models ...interface{}) error {
+	if DB == nil {
+		return errors.New("database: cannot migrate, DB is not initialized")
+	}
+	if err := DB.AutoMigrate(models...); err != nil {
+		return fmt.Errorf("database: automigrate failed: %w", err)
+	}
 	return nil
 }
 

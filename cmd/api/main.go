@@ -15,6 +15,11 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/controllers/health"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
+	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
+	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/models/personalaccesstoken"
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
+	tenantmodel "github.com/akshit_tyagi/postgresql_project/internal/models/tenant"
+	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
 	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
@@ -49,6 +54,16 @@ func main() {
 
 	if err := config.InitializeDatabase(); err != nil {
 		slog.Error("database init failed", "error", err)
+		os.Exit(1)
+	}
+	if err := config.Migrate(
+		&permissionmodel.Permission{},
+		&rolemodel.Role{},
+		&usermodel.User{},
+		&tenantmodel.Tenant{},
+		&personalaccesstokenmodel.PersonalAccessToken{},
+	); err != nil {
+		slog.Error("database migration failed", "error", err)
 		os.Exit(1)
 	}
 	defer func() {
