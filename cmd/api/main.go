@@ -82,6 +82,25 @@ func main() {
 	r := gin.New()
 	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
+	r.Use(func(c *gin.Context) {
+		c.Header("Content-Type", "application/json; charset=utf-8")
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		c.Header("Referrer-Policy", "strict-origin")
+		c.Header("Permissions-Policy", "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()")
+		c.Next()
+	})
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     strings.Split(appConfig.AllowedOrigin, ","),
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	r.Use(middlewares.RateLimiter())
 	r.HandleMethodNotAllowed = true
 	r.NoRoute(func(c *gin.Context) {
@@ -100,7 +119,7 @@ func main() {
 	})
 	r.Use(ginhelmet.Default())
 	r.Use(secure.New(secure.Config{
-		AllowedHosts:          []string{appConfig.AllowedHosts},
+		AllowedHosts:          strings.Split(appConfig.AllowedHosts, ","),
 		SSLRedirect:           false,
 		SSLHost:               "ssl.example.com",
 		STSSeconds:            315360000,
@@ -112,25 +131,6 @@ func main() {
 		IENoOpen:              true,
 		ReferrerPolicy:        "strict-origin-when-cross-origin",
 		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
-	}))
-	r.Use(func(c *gin.Context) {
-		c.Header("Content-Type", "application/json; charset=utf-8")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
-		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		c.Header("Referrer-Policy", "strict-origin")
-		c.Header("Permissions-Policy", "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()")
-		c.Next()
-	})
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{appConfig.AllowedOrigin},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
 	}))
 	r.Use(middlewares.RequestSizeLimiter(10 * 1024 * 1024))
 	if appConfig.SessionSecret == "" {
