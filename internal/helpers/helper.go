@@ -6,3 +6,12 @@ type ApiResponse struct {
 	Message    string      `json:"message"`
 	Data       interface{} `json:"data"`
 }
+
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}

@@ -13,13 +13,9 @@ import (
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
-	"github.com/akshit_tyagi/postgresql_project/internal/controllers/health"
+	"github.com/akshit_tyagi/postgresql_project/internal/database/migrations"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
-	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/models/permission"
-	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/models/personalaccesstoken"
-	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/models/role"
-	tenantmodel "github.com/akshit_tyagi/postgresql_project/internal/models/tenant"
-	usermodel "github.com/akshit_tyagi/postgresql_project/internal/models/user"
+	"github.com/akshit_tyagi/postgresql_project/internal/modules/health"
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
 	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
@@ -29,10 +25,6 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-
-	_ "github.com/akshit_tyagi/postgresql_project/docs"
 )
 
 func main() {
@@ -56,13 +48,7 @@ func main() {
 		slog.Error("database init failed", "error", err)
 		os.Exit(1)
 	}
-	if err := config.Migrate(
-		&permissionmodel.Permission{},
-		&rolemodel.Role{},
-		&usermodel.User{},
-		&tenantmodel.Tenant{},
-		&personalaccesstokenmodel.PersonalAccessToken{},
-	); err != nil {
+	if err := migrations.Migrate(); err != nil {
 		slog.Error("database migration failed", "error", err)
 		os.Exit(1)
 	}
@@ -83,6 +69,9 @@ func main() {
 	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
 	r.Use(func(c *gin.Context) {
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
+		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Content-Type", "application/json; charset=utf-8")
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
@@ -145,15 +134,9 @@ func main() {
 	r.GET("/healthz", health.Healthz)
 	r.GET("/readyz", health.Readyz)
 
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	r.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
-	})
-
 	v1 := r.Group("/api/v1")
 	{
-		adminGroup := v1.Group("/admin")
-		routes.AdminRoutes(adminGroup)
+		routes.Routes(v1)
 	}
 
 	srv := &http.Server{

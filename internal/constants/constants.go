@@ -18,7 +18,7 @@ const (
 	AuthorizationHeader   = "Authorization header is required"
 	BadAuthFormat         = "Authorization format must be: Bearer <token>"
 	Unauthenticated       = "Unauthenticated"
-	Forbidden             = "You do not have permission to access this resource"
+	Forbidden             = "You do not have permission to access this resource."
 	AccessDenied          = "Access denied for this guard"
 	LoginSuccess          = "Login successful"
 	LogoutSuccess         = "Logout successful"

@@ -11,10 +11,11 @@ import (
 )
 
 type AccessTokenClaims struct {
-	UserID uint   `json:"id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
-	Guard  string `json:"guard"`
+	UserID      uint     `json:"id"`
+	Email       string   `json:"email"`
+	Role        string   `json:"role"`
+	Guard       string   `json:"guard"`
+	Permissions []string `json:"permissions"`
 	jwt.RegisteredClaims
 }
 
@@ -24,16 +25,17 @@ type RefreshTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(userID uint, email, role, guard string) (string, error) {
+func GenerateAccessToken(userID uint, email, role, guard string, permissions []string) (string, error) {
 	expiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
 	if expiryMinutes == 0 {
 		expiryMinutes = 60
 	}
 	claims := AccessTokenClaims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
-		Guard:  guard,
+		UserID:      userID,
+		Email:       email,
+		Role:        role,
+		Guard:       guard,
+		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expiryMinutes) * time.Minute)),
