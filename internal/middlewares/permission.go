@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
@@ -10,8 +11,22 @@ import (
 
 func HasPermission(permission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		permissions := c.MustGet("permissions").([]string)
-		if !helpers.Contains(permissions, permission) {
+		role, exists := c.Get("role")
+		if exists {
+			roleStr, ok := role.(string)
+			if ok && roleStr == fmt.Sprintf("%d", constants.SuperAdminRole) {
+				c.Next()
+				return
+			}
+		}
+
+		permissionsVal, exists := c.Get("permissions")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden})
+			return
+		}
+		permissions, ok := permissionsVal.([]string)
+		if !ok || !helpers.Contains(permissions, permission) {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden})
 			return
 		}

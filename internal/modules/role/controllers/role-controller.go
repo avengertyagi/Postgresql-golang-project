@@ -4,37 +4,37 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/common"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
-	roleservice "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
+	svc "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/role/validations"
 	"github.com/gin-gonic/gin"
 )
 
-func GetAll(c *gin.Context) {
+func GetAllWithPagination(c *gin.Context) {
 	var req rolemodel.RoleListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": nil})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := roleservice.GetAll(req)
+	roleList, total, lastPage, err := svc.GetAllWithPagination(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong + " " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "statusCode": http.StatusInternalServerError, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	response := rolemodel.RoleListAPIResponse{
-		Status:     true,
-		StatusCode: http.StatusOK,
-		Message:    constants.RoleFetchedSuccess,
-		Data:       role.Data,
-		Pagination: rolemodel.Pagination{
-			CurrentPage: role.CurrentPage,
-			PerPage:     role.PerPage,
-			Total:       role.Total,
-			LastPage:    role.LastPage,
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"message":    constants.RoleFetchedSuccess,
+		"data":       roleList,
+		"pagination": &common.Pagination{
+			CurrentPage: req.Page,
+			PerPage:     req.Limit,
+			Total:       total,
+			LastPage:    lastPage,
 		},
-	}
-	c.JSON(http.StatusOK, response)
+	})
 }
 
 func Create(c *gin.Context) {
@@ -47,31 +47,26 @@ func Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	role, err := roleservice.Create(req)
+	role, err := svc.Create(req)
 	if err != nil {
 		if errors.Is(err, constants.RoleAlreadyExists) {
-			c.JSON(http.StatusConflict, gin.H{
-				"status":     false,
-				"statusCode": http.StatusConflict,
-				"message":    err.Error(),
-			})
+			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error()})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	response := rolemodel.RoleAPIResponse{
-		Status:     true,
-		StatusCode: http.StatusOK,
-		Message:    constants.RoleCreatedSuccess,
-		Data:       *role,
-	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"message":    constants.RoleCreatedSuccess,
+		"data":       *role,
+	})
 }
 
 func GetByID(c *gin.Context) {
 	idStr := c.Param("id")
-	role, err := roleservice.GetByID(idStr)
+	role, err := svc.GetByID(idStr)
 	if err != nil {
 		if err == constants.RoleNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
@@ -80,13 +75,12 @@ func GetByID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	response := rolemodel.RoleAPIResponse{
-		Status:     true,
-		StatusCode: http.StatusOK,
-		Message:    constants.RoleRetrievedSuccess,
-		Data:       *role,
-	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"message":    constants.RoleRetrievedSuccess,
+		"data":       *role,
+	})
 }
 
 func Update(c *gin.Context) {
@@ -100,7 +94,7 @@ func Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	role, err := roleservice.Update(id, req)
+	role, err := svc.Update(id, req)
 	if err != nil {
 		if errors.Is(err, constants.RoleNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
@@ -113,18 +107,17 @@ func Update(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	response := rolemodel.RoleAPIResponse{
-		Status:     true,
-		StatusCode: http.StatusOK,
-		Message:    constants.RoleUpdatedSuccess,
-		Data:       *role,
-	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"message":    constants.RoleUpdatedSuccess,
+		"data":       *role,
+	})
 }
 
 func Delete(c *gin.Context) {
 	id := c.Param("id")
-	role, err := roleservice.Delete(id)
+	role, err := svc.Delete(id)
 	if err != nil {
 		if errors.Is(err, constants.RoleNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
@@ -133,11 +126,10 @@ func Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})
 		return
 	}
-	response := rolemodel.RoleAPIResponse{
-		Status:     true,
-		StatusCode: http.StatusOK,
-		Message:    constants.RoleDeletedSuccess,
-		Data:       *role,
-	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"success":    true,
+		"statusCode": http.StatusOK,
+		"message":    constants.RoleDeletedSuccess,
+		"data":       *role,
+	})
 }

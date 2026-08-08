@@ -1,16 +1,16 @@
 package seeders
 
 import (
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
-	userservice "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/services"
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/permission/models"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
-	roleservice "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
+	rolerepo "github.com/akshit_tyagi/postgresql_project/internal/modules/role/repositories"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,16 +31,7 @@ func AdminSeeder() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	admins := []usermodel.User{
-		{
-			Name:     "Super Admin",
-			Email:    "superadmin@gmail.com",
-			Password: string(hashedPassword),
-			Status:   true,
-			UserType: constants.SuperAdminRole,
-		},
-	}
+	fmt.Println("constants.SuperAdminRole", constants.SuperAdminRole)
 	var permissions []permissionmodel.Permission
 	if err := config.DB.Find(&permissions).Error; err != nil {
 		log.Fatalf("Failed to fetch permissions for seeding: %v", err)
@@ -53,25 +44,42 @@ func AdminSeeder() {
 	for i, p := range permissions {
 		permissionIDs[i] = p.ID
 	}
-	if err := roleservice.SyncRolePermissions(&adminRole, permissionIDs); err != nil {
+	if err := rolerepo.SyncRolePermissions(&adminRole, permissionIDs); err != nil {
 		log.Fatalf("Failed to sync permissions to Admin role: %v", err)
 	}
 	log.Printf("Synced %d permissions to Admin role.", len(permissions))
+
+	admins := []usermodel.User{
+		{
+			Name:     "Super Admin",
+			Email:    "superadmin@gmail.com",
+			Password: string(hashedPassword),
+			Status:   true,
+			UserType: constants.SuperAdminRole,
+			RoleID:   adminRole.ID,
+		},
+	}
 	for _, admin := range admins {
-		result := config.DB.Where(usermodel.User{Email: admin.Email}).FirstOrCreate(&admin)
+		admin.RoleID = adminRole.ID
+		admin.UserType = constants.SuperAdminRole
+
+		result := config.DB.Where("email = ?", admin.Email).FirstOrCreate(&admin)
 		if result.Error != nil {
 			log.Printf("Failed to seed admin %s: %v", admin.Email, result.Error)
 			continue
 		}
+
+		if err := config.DB.Model(&admin).Updates(map[string]interface{}{
+			"user_type": constants.SuperAdminRole,
+			"role_id":   adminRole.ID,
+		}).Error; err != nil {
+			log.Printf("Failed to update admin fields for %s: %v", admin.Email, err)
+		}
+
 		if result.RowsAffected > 0 {
 			log.Printf("Seeded admin: %s", admin.Email)
 		} else {
-			log.Printf("Admin already exists, skipped: %s", admin.Email)
-		}
-		if err := userservice.AssignRole(&admin, &adminRole); err != nil {
-			log.Printf("Failed to assign Admin role to %s: %v", admin.Email, err)
-		} else {
-			log.Printf("Assigned Admin role to %s", admin.Email)
+			log.Printf("Admin already exists, updated role and user_type: %s", admin.Email)
 		}
 	}
 }

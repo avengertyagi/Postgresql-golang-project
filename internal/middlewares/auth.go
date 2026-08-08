@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -44,6 +45,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.SessionNotFound})
 			return
 		}
+		fmt.Println("claims", claims)
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)

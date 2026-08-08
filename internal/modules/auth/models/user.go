@@ -3,22 +3,23 @@ package user
 import (
 	"time"
 
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	TenantID       uint   `json:"tenant_id"       gorm:"type:bigint;default:null"`
-	RoleID         uint   `json:"role_id"         gorm:"type:bigint;default:null"`
-	Name           string `json:"name"            gorm:"type:varchar(100);default:null"`
-	Email          string `json:"email"           gorm:"type:varchar(150);uniqueIndex;not null"`
-	Password       string `json:"-"               gorm:"type:varchar(255);not null"`
-	Status         bool   `json:"status"          gorm:"default:true"`
-	UserType       uint8  `json:"user_type" gorm:"default:1"`
-	ProfilePicture string `json:"profile_picture" gorm:"type:varchar(500);default:null"`
-	DeviceToken    string `json:"device_token"    gorm:"type:varchar(255);default:null"`
-	DeviceType     string `json:"device_type"     gorm:"type:varchar(50);default:null"`
+	RoleID         uint           `json:"role_id"         gorm:"type:bigint;default:null"`
+	Role           rolemodel.Role `json:"role"            gorm:"foreignKey:role_id"`
+	Name           string         `json:"name"            gorm:"index;type:varchar(100);default:null"`
+	Email          string         `json:"email"           gorm:"index;type:varchar(150);uniqueIndex;not null"`
+	Password       string         `json:"-"               gorm:"type:varchar(255);not null"`
+	Status         bool           `json:"status"          gorm:"index;default:true"`
+	UserType       uint8          `json:"user_type" gorm:"index;default:null"`
+	ProfilePicture string         `json:"profile_picture" gorm:"type:varchar(500);default:null"`
+	DeviceToken    string         `json:"device_token"    gorm:"type:varchar(255);default:null"`
+	DeviceType     string         `json:"device_type"     gorm:"type:varchar(50);default:null"`
 }
 
 type RefreshRequest struct {

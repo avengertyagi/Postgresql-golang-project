@@ -1,11 +1,6 @@
 package helpers
 
-type ApiResponse struct {
-	Status     bool        `json:"status"`
-	StatusCode int         `json:"statusCode"`
-	Message    string      `json:"message"`
-	Data       interface{} `json:"data"`
-}
+import "unicode"
 
 func Contains(slice []string, item string) bool {
 	for _, s := range slice {
@@ -14,4 +9,13 @@ func Contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func Ucfirst(s string) string {
+	if s == "" {
+		return ""
+	}
+	rune := []rune(s)
+	rune[0] = unicode.ToUpper(rune[0])
+	return string(rune)
 }
