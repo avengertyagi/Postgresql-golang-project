@@ -1,87 +1,91 @@
-package role
+package services
 
 import (
-	"errors"
-	"math"
+	"context"
+	"strings"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
+	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	rolerepo "github.com/akshit_tyagi/postgresql_project/internal/modules/role/repositories"
 )
 
-func GetAllWithPagination(req rolemodel.RoleListRequest) ([]rolemodel.Role, int64, int, error) {
-	if req.Page <= 0 {
-		req.Page = 1
-	}
-	if req.Limit <= 0 {
-		req.Limit = 10
-	}
-	if req.SortBy != "name" && req.SortBy != "created_at" && req.SortBy != "updated_at" {
-		req.SortBy = "id"
-	}
-	if req.SortOrder != "desc" && req.SortOrder != "DESC" {
-		req.SortOrder = "ASC"
-	}
-	roleList, total, err := rolerepo.ListRole(req)
-	if err != nil {
-		return nil, 0, 0, err
-	}
-	lastPage := int(math.Ceil(float64(total) / float64(req.Limit)))
-	return roleList, total, lastPage, nil
+type RoleService interface {
+	Create(ctx context.Context, req dto.RoleRequest) (*rolemodel.Role, error)
+	GetByID(ctx context.Context, id uint) (*rolemodel.Role, error)
+	List(ctx context.Context, q dto.PaginationQuery) ([]rolemodel.Role, int64, error)
+	Update(ctx context.Context, id uint, req dto.RoleRequest) (*rolemodel.Role, error)
+	Delete(ctx context.Context, id uint) (*rolemodel.Role, error)
 }
 
-func Create(req rolemodel.RoleRequest) (*rolemodel.Role, error) {
-	existing, err := rolerepo.FindRoleByName(req.Name)
-	if err == nil && existing != nil {
-		return nil, constants.RoleAlreadyExists
-	}
-	role, err := rolerepo.CreateRole(&req)
+type roleService struct {
+	repo rolerepo.RoleRepository
+}
+
+func NewRoleService(repo rolerepo.RoleRepository) RoleService {
+	return &roleService{repo: repo}
+}
+
+func (s *roleService) List(ctx context.Context, q dto.PaginationQuery) ([]rolemodel.Role, int64, error) {
+	return s.repo.FindAll(ctx, q)
+}
+
+func (s *roleService) Create(ctx context.Context, req dto.RoleRequest) (*rolemodel.Role, error) {
+	name := strings.TrimSpace(req.Name)
+	exists, err := s.repo.ExistsByName(ctx, name, 0)
 	if err != nil {
 		return nil, err
 	}
+	if exists {
+		return nil, constants.RoleAlreadyExists
+	}
+	role := &rolemodel.Role{
+		Name: name,
+	}
+	if err := s.repo.Create(ctx, role); err != nil {
+		return nil, err
+	}
 	if len(req.PermissionIDs) > 0 {
-		if err := rolerepo.SyncRolePermissions(role, req.PermissionIDs); err != nil {
+		if err := s.repo.SyncPermissions(ctx, role, req.PermissionIDs); err != nil {
 			return nil, err
 		}
 	}
 	return role, nil
 }
 
-func GetByID(ID string) (*rolemodel.Role, error) {
-	role, err := rolerepo.FindByID(ID)
+func (s *roleService) GetByID(ctx context.Context, id uint) (*rolemodel.Role, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
+func (s *roleService) Update(ctx context.Context, id uint, req dto.RoleRequest) (*rolemodel.Role, error) {
+	role, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, constants.RoleNotFound) {
-			return nil, constants.RoleNotFound
+		return nil, err
+	}
+	name := strings.TrimSpace(req.Name)
+	if !strings.EqualFold(name, role.Name) {
+		exists, err := s.repo.ExistsByName(ctx, name, id)
+		if err != nil {
+			return nil, err
 		}
+		if exists {
+			return nil, constants.RoleAlreadyExists
+		}
+		role.Name = name
+	}
+	if err := s.repo.Update(ctx, role); err != nil {
 		return nil, err
 	}
+
 	return role, nil
 }
 
-func Update(id string, req rolemodel.RoleRequest) (*rolemodel.Role, error) {
-	role, err := rolerepo.FindByID(id)
+func (s *roleService) Delete(ctx context.Context, id uint) (*rolemodel.Role, error) {
+	role, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return nil, constants.RoleNotFound
-	}
-	existing, err := rolerepo.FindRoleByName(req.Name, role.ID)
-	if err == nil && existing != nil {
-		return nil, constants.RoleAlreadyExists
-	}
-	if err := rolerepo.UpdateRole(role); err != nil {
 		return nil, err
 	}
-	if err := rolerepo.SyncRolePermissions(role, req.PermissionIDs); err != nil {
-		return nil, err
-	}
-	return role, nil
-}
-
-func Delete(id string) (*rolemodel.Role, error) {
-	role, err := rolerepo.FindByID(id)
-	if err != nil {
-		return nil, constants.RoleNotFound
-	}
-	if err := rolerepo.DeleteRole(role); err != nil {
+	if err := s.repo.Delete(ctx, id); err != nil {
 		return nil, err
 	}
 	return role, nil

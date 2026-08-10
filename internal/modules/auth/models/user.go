@@ -22,14 +22,6 @@ type User struct {
 	DeviceType     string         `json:"device_type"     gorm:"type:varchar(50);default:null"`
 }
 
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required" example:"eyJhbGciOiJIUzI1NiIs..."`
-}
-
-type LogoutRequest struct {
-	RefreshToken string `json:"refresh_token" binding:"required" example:"eyJhbGciOiJIUzI1NiIs..."`
-}
-
 func (u *User) CheckPassword(password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	return err == nil

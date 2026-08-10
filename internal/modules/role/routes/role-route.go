@@ -1,18 +1,25 @@
 package routes
 
 import (
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	middlewares "github.com/akshit_tyagi/postgresql_project/internal/middlewares"
-	rolecontroller "github.com/akshit_tyagi/postgresql_project/internal/modules/role/controllers"
+	rolecontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/role/controllers"
+	rolerepositories "github.com/akshit_tyagi/postgresql_project/internal/modules/role/repositories"
+	roleservices "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
+
 	"github.com/gin-gonic/gin"
 )
 
 func RoleRoutes(r *gin.RouterGroup) {
-	{
-		protected := r.Group("role")
-		protected.GET("/", middlewares.HasPermission("role-list"), rolecontroller.GetAllWithPagination)
-		protected.POST("/create", middlewares.HasPermission("role-create"), rolecontroller.Create)
-		protected.GET("/edit/:id", middlewares.HasPermission("role-edit"), rolecontroller.GetByID)
-		protected.PUT("/update/:id", middlewares.HasPermission("role-update"), rolecontroller.Update)
-		protected.DELETE("/destroy/:id", middlewares.HasPermission("role-delete"), rolecontroller.Delete)
-	}
+
+	roleRepo := rolerepositories.NewRoleRepository(config.DB)
+	roleService := roleservices.NewRoleService(roleRepo)
+	roleController := rolecontrollers.NewRoleController(roleService)
+
+	protected := r.Group("role")
+	protected.GET("/", middlewares.HasPermission("role-list"), roleController.List)
+	protected.POST("/create", middlewares.HasPermission("role-create"), roleController.Create)
+	protected.GET("/edit/:id", middlewares.HasPermission("role-edit"), roleController.GetByID)
+	protected.PUT("/update/:id", middlewares.HasPermission("role-update"), roleController.Update)
+	protected.DELETE("/destroy/:id", middlewares.HasPermission("role-delete"), roleController.Delete)
 }

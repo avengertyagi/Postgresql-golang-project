@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
-	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
+	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
 )
 
-func ValidateRole(req rolemodel.RoleRequest) error {
+func ValidateRole(req dto.RoleRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("Name is required.")
 	}

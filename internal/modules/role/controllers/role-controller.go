@@ -1,4 +1,4 @@
-package role
+package controllers
 
 import (
 	"errors"
@@ -6,39 +6,53 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/common"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
-	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
-	svc "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
+	"github.com/akshit_tyagi/postgresql_project/internal/helpers"
+	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
+	roleservice "github.com/akshit_tyagi/postgresql_project/internal/modules/role/services"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/role/validations"
 	"github.com/gin-gonic/gin"
 )
 
-func GetAllWithPagination(c *gin.Context) {
-	var req rolemodel.RoleListRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
+type RoleController struct {
+	service roleservice.RoleService
+}
+
+func NewRoleController(s roleservice.RoleService) *RoleController {
+	return &RoleController{service: s}
+}
+
+func (ctl *RoleController) List(c *gin.Context) {
+	var query dto.PaginationQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	roleList, total, lastPage, err := svc.GetAllWithPagination(req)
+	roleList, total, err := ctl.service.List(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "statusCode": http.StatusInternalServerError, "message": err.Error(), "data": gin.H{}})
 		return
 	}
+	totalPages := int((total + int64(query.Limit) - 1) / int64(query.Limit))
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success":    true,
 		"statusCode": http.StatusOK,
 		"message":    constants.RoleFetchedSuccess,
 		"data":       roleList,
 		"pagination": &common.Pagination{
-			CurrentPage: req.Page,
-			PerPage:     req.Limit,
+			CurrentPage: query.Page,
+			PerPage:     query.Limit,
 			Total:       total,
-			LastPage:    lastPage,
+			TotalPages:  totalPages,
 		},
 	})
 }
 
-func Create(c *gin.Context) {
-	var req rolemodel.RoleRequest
+func (ctl *RoleController) Create(c *gin.Context) {
+	var req dto.RoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
@@ -47,7 +61,7 @@ func Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	role, err := svc.Create(req)
+	role, err := ctl.service.Create(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, constants.RoleAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error()})
@@ -64,9 +78,13 @@ func Create(c *gin.Context) {
 	})
 }
 
-func GetByID(c *gin.Context) {
-	idStr := c.Param("id")
-	role, err := svc.GetByID(idStr)
+func (ctl *RoleController) GetByID(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+	role, err := ctl.service.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if err == constants.RoleNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
@@ -83,9 +101,13 @@ func GetByID(c *gin.Context) {
 	})
 }
 
-func Update(c *gin.Context) {
-	var req rolemodel.RoleRequest
-	id := c.Param("id")
+func (ctl *RoleController) Update(c *gin.Context) {
+	var req dto.RoleRequest
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
@@ -94,10 +116,10 @@ func Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	role, err := svc.Update(id, req)
+	role, err := ctl.service.Update(c.Request.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, constants.RoleNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound.Error()})
 			return
 		}
 		if errors.Is(err, constants.RoleAlreadyExists) {
@@ -115,12 +137,16 @@ func Update(c *gin.Context) {
 	})
 }
 
-func Delete(c *gin.Context) {
-	id := c.Param("id")
-	role, err := svc.Delete(id)
+func (ctl *RoleController) Delete(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		return
+	}
+	role, err := ctl.service.Delete(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, constants.RoleNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound})
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.RoleNotFound.Error()})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong})

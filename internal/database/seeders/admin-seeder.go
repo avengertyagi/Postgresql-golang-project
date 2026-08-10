@@ -10,7 +10,6 @@ import (
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/permission/models"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
-	rolerepo "github.com/akshit_tyagi/postgresql_project/internal/modules/role/repositories"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -40,11 +39,7 @@ func AdminSeeder() {
 	if err := config.DB.Where(rolemodel.Role{Name: "Admin"}).FirstOrCreate(&adminRole).Error; err != nil {
 		log.Fatalf("Failed to find or create Admin role: %v", err)
 	}
-	permissionIDs := make([]uint, len(permissions))
-	for i, p := range permissions {
-		permissionIDs[i] = p.ID
-	}
-	if err := rolerepo.SyncRolePermissions(&adminRole, permissionIDs); err != nil {
+	if err := config.DB.Model(&adminRole).Association("Permissions").Replace(permissions); err != nil {
 		log.Fatalf("Failed to sync permissions to Admin role: %v", err)
 	}
 	log.Printf("Synced %d permissions to Admin role.", len(permissions))

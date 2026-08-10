@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"regexp"
 
-	request "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/request/admin"
+	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/dto"
 )
 
-func AdminLoginValidation(request request.LoginRequest) error {
+func AdminLoginValidation(request dto.AdminLoginRequest) error {
 	if request.Email == "" {
 		return fmt.Errorf("Email is required.")
 	}
