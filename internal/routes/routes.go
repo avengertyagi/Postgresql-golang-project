@@ -5,13 +5,15 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	authroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/routes"
 	roleroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/role/routes"
+	staffroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/routes"
 	"github.com/gin-gonic/gin"
 )
 
 func Routes(r *gin.RouterGroup) {
-	protected := r.Group("admin")
-	protected.Use(middlewares.AuthMiddleware())
-	protected.Use(middlewares.GuardMiddleware(constants.AdminGuard))
+	adminProtected := r.Group("admin")
+	adminProtected.Use(middlewares.AuthMiddleware())
+	adminProtected.Use(middlewares.GuardMiddleware(constants.AdminGuard))
 	authroutes.AdminRoutes(r)
-	roleroutes.RoleRoutes(protected)
+	roleroutes.RoleRoutes(adminProtected)
+	staffroutes.StaffRoutes(adminProtected)
 }

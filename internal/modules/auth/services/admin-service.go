@@ -90,21 +90,21 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 
 func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 	if _, err := helpers.ParseRefreshToken(refreshToken); err != nil {
-		return errors.New(constants.SessionNotFound)
+		return constants.SessionNotFound
 	}
 	tokenHash := helpers.HashToken(refreshToken)
 	pat, err := s.repo.FindTokenByHash(ctx, tokenHash)
 	if err != nil {
-		return errors.New(constants.SessionNotFound)
+		return constants.SessionNotFound
 	}
 	if pat.Revoked {
-		return errors.New(constants.SessionAlreadyRevoked)
+		return constants.SessionAlreadyRevoked
 	}
 	if time.Now().After(pat.ExpiresAt) {
-		return errors.New(constants.SessionExpired)
+		return constants.SessionExpired
 	}
 	if err := s.repo.RevokeRefreshToken(ctx, tokenHash); err != nil {
-		return errors.New(constants.SomethingWentWrong + err.Error())
+		return constants.SomethingWentWrong
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) (*dto.TokenRefreshResponse, error) {
 	claims, err := helpers.ParseRefreshToken(rawRefreshToken)
 	if err != nil {
-		return nil, errors.New(constants.SessionNotFound)
+		return nil, constants.SessionNotFound
 	}
 	pat, err := s.repo.FindTokenByHash(ctx, helpers.HashToken(rawRefreshToken))
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) 
 	}
 	admin, err := s.repo.FindByID(ctx, claims.UserID)
 	if err != nil {
-		return nil, errors.New(constants.UserNotFound)
+		return nil, constants.UserNotFound
 	}
 	permissions := s.repo.GetUserPermissions(ctx, admin)
 	newAccessToken, err := helpers.GenerateAccessToken(
@@ -153,7 +153,7 @@ func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) 
 func (s *authService) GetProfile(ctx context.Context, userID uint) (*usermodel.ProfileResponse, error) {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, errors.New(constants.NotFound)
+		return nil, constants.NotFound
 	}
 	return &usermodel.ProfileResponse{
 		ID:             user.ID,

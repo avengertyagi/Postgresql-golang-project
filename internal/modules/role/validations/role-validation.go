@@ -7,7 +7,7 @@ import (
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
 )
 
-func ValidateRole(req dto.RoleRequest) error {
+func Validate(req dto.RoleRequest) error {
 	if req.Name == "" {
 		return fmt.Errorf("Name is required.")
 	}
