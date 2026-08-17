@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -25,9 +26,18 @@ type App struct {
 }
 
 func LoadApp() (App, error) {
-	debug, _ := strconv.ParseBool(os.Getenv("APP_DEBUG"))
-	accessExpiry, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
-	refreshExpiry, _ := strconv.Atoi(os.Getenv("JWT_REFRESH_EXPIRY_DAYS"))
+	debug, err := strconv.ParseBool(os.Getenv("APP_DEBUG"))
+	if err != nil && os.Getenv("APP_DEBUG") != "" {
+		slog.Warn("config: invalid APP_DEBUG value, defaulting to false", "value", os.Getenv("APP_DEBUG"))
+	}
+	accessExpiry, err := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
+	if err != nil && os.Getenv("JWT_ACCESS_EXPIRY_MINUTES") != "" {
+		slog.Warn("config: invalid JWT_ACCESS_EXPIRY_MINUTES value, defaulting to 60", "value", os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
+	}
+	refreshExpiry, err := strconv.Atoi(os.Getenv("JWT_REFRESH_EXPIRY_DAYS"))
+	if err != nil && os.Getenv("JWT_REFRESH_EXPIRY_DAYS") != "" {
+		slog.Warn("config: invalid JWT_REFRESH_EXPIRY_DAYS value, defaulting to 30", "value", os.Getenv("JWT_REFRESH_EXPIRY_DAYS"))
+	}
 
 	app := App{
 		AppName:                os.Getenv("APP_NAME"),
@@ -68,10 +78,7 @@ func (a App) validate() error {
 	need("APP_PORT", a.AppPort)
 
 	if len(missing) > 0 {
-		if a.AppEnv == "" || strings.EqualFold(a.AppEnv, "local") {
-		} else {
-			return fmt.Errorf("config: missing required env vars: %s", strings.Join(missing, ", "))
-		}
+		return fmt.Errorf("config: missing required env vars: %s", strings.Join(missing, ", "))
 	}
 
 	if len(a.SessionSecret) > 0 && len(a.SessionSecret) < 32 {

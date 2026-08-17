@@ -24,12 +24,12 @@ func NewStaffController(s staffservice.StaffService) *StaffController {
 func (ctl *StaffController) List(c *gin.Context) {
 	var query dto.PaginationQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
 	roleList, total, err := ctl.service.List(c.Request.Context(), query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "statusCode": http.StatusInternalServerError, "message": err.Error(), "data": gin.H{}})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": err.Error(), "data": gin.H{}})
 		return
 	}
 	totalPages := int((total + int64(query.Limit) - 1) / int64(query.Limit))
@@ -38,7 +38,7 @@ func (ctl *StaffController) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
+		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.StaffFetchedSuccess,
 		"data":       roleList,
@@ -61,7 +61,7 @@ func (ctl *StaffController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
-	role, err := ctl.service.Create(c.Request.Context(), req)
+	staff, err := ctl.service.Create(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, constants.StaffAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error()})
@@ -71,17 +71,17 @@ func (ctl *StaffController) Create(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
+		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.StaffCreatedSuccess,
-		"data":       *role,
+		"data":       *staff,
 	})
 }
 
 func (ctl *StaffController) GetByID(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	role, err := ctl.service.GetByID(c.Request.Context(), id)
@@ -94,7 +94,7 @@ func (ctl *StaffController) GetByID(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
+		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.StaffRetrievedSuccess,
 		"data":       *role,
@@ -105,7 +105,7 @@ func (ctl *StaffController) Update(c *gin.Context) {
 	var req dto.StaffRequest
 	id, err := helpers.ParseID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -130,7 +130,7 @@ func (ctl *StaffController) Update(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
+		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.StaffUpdatedSuccess,
 		"data":       *role,
@@ -140,7 +140,7 @@ func (ctl *StaffController) Update(c *gin.Context) {
 func (ctl *StaffController) Delete(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error()})
 		return
 	}
 	role, err := ctl.service.Delete(c.Request.Context(), id)
@@ -153,7 +153,7 @@ func (ctl *StaffController) Delete(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"success":    true,
+		"status":     true,
 		"statusCode": http.StatusOK,
 		"message":    constants.StaffDeletedSuccess,
 		"data":       *role,

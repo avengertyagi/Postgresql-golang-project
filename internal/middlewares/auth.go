@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -28,12 +27,12 @@ func AuthMiddleware() gin.HandlerFunc {
 				"request_id", requestID(c),
 				"path", c.Request.URL.Path,
 			)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.AuthorizationHeader})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.AuthorizationHeader.Error()})
 			return
 		}
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "bearer") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.BadAuthFormat})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.BadAuthFormat.Error()})
 			return
 		}
 		claims, err := helpers.ParseAccessToken(parts[1])
@@ -42,10 +41,10 @@ func AuthMiddleware() gin.HandlerFunc {
 				"request_id", requestID(c),
 				"error", err.Error(),
 			)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.SessionNotFound})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.SessionNotFound.Error()})
 			return
 		}
-		fmt.Println("claims", claims)
+		slog.Debug("auth: token verified", "request_id", requestID(c), "user_id", claims.UserID, "guard", claims.Guard)
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)
@@ -63,16 +62,16 @@ func RoleMiddleware(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error()})
 			return
 		}
 		roleStr, ok := role.(string)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error()})
 			return
 		}
 		if _, ok := roleSet[roleStr]; !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden.Error()})
 			return
 		}
 		c.Next()
@@ -83,12 +82,12 @@ func GuardMiddleware(guardName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		guard, exists := c.Get("guard")
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.AccessDenied})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.AccessDenied.Error()})
 			return
 		}
 		guardStr, ok := guard.(string)
 		if !ok || guardStr != guardName {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.AccessDenied})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.AccessDenied.Error()})
 			return
 		}
 		c.Next()

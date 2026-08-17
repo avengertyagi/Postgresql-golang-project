@@ -1,4 +1,4 @@
-package role
+package models
 
 import (
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/permission/models"

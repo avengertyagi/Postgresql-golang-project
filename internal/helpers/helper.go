@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"strconv"
-	"unicode"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,15 +13,6 @@ func Contains(slice []string, item string) bool {
 		}
 	}
 	return false
-}
-
-func Ucfirst(s string) string {
-	if s == "" {
-		return ""
-	}
-	rune := []rune(s)
-	rune[0] = unicode.ToUpper(rune[0])
-	return string(rune)
 }
 
 func ParseID(c *gin.Context) (uint, error) {

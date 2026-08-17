@@ -38,14 +38,10 @@ func (ctl *AdminController) Login(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
 			return
 		}
-		if errors.Is(err, constants.InactiveAccount) {
-			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong, "data": gin.H{}})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LoginSuccess, "data": *admin})
+	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LoginSuccess.Error(), "data": *admin})
 }
 
 func (ctl *AdminController) Logout(c *gin.Context) {
@@ -55,10 +51,10 @@ func (ctl *AdminController) Logout(c *gin.Context) {
 		return
 	}
 	if err := ctl.service.Logout(c.Request.Context(), req.RefreshToken); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong, "data": gin.H{}})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LogoutSuccess, "data": gin.H{}})
+	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LogoutSuccess.Error(), "data": gin.H{}})
 }
 
 func (ctl *AdminController) RefreshToken(c *gin.Context) {
@@ -75,7 +71,7 @@ func (ctl *AdminController) RefreshToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"statusCode": http.StatusOK,
-		"message":    constants.RefreshSuccess,
+		"message":    constants.RefreshSuccess.Error(),
 		"data":       resp,
 	})
 }
@@ -83,23 +79,23 @@ func (ctl *AdminController) RefreshToken(c *gin.Context) {
 func (ctl *AdminController) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated, "data": gin.H{}})
+		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error(), "data": gin.H{}})
 		return
 	}
 	id, ok := userID.(uint)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated, "data": gin.H{}})
+		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error(), "data": gin.H{}})
 		return
 	}
 	profile, err := ctl.service.GetProfile(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"status": false, "statusCode": http.StatusOK, "message": constants.ProfileFetchSuccess, "data": gin.H{}})
+		c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.NotFound.Error(), "data": gin.H{}})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"statusCode": http.StatusOK,
-		"message":    constants.ProfileFetchSuccess,
+		"message":    constants.ProfileFetchSuccess.Error(),
 		"data":       profile,
 	})
 }

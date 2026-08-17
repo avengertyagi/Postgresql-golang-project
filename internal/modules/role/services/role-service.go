@@ -76,6 +76,9 @@ func (s *roleService) Update(ctx context.Context, id uint, req dto.RoleRequest) 
 	if err := s.repo.Update(ctx, role); err != nil {
 		return nil, err
 	}
+	if err := s.repo.SyncPermissions(ctx, role, req.PermissionIDs); err != nil {
+		return nil, err
+	}
 
 	return role, nil
 }

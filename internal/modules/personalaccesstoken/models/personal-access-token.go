@@ -1,4 +1,4 @@
-package personalaccesstoken
+package models
 
 import (
 	"time"

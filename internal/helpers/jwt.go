@@ -3,6 +3,7 @@ package helpers
 import (
 	"crypto/sha256"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"time"
@@ -26,8 +27,11 @@ type RefreshTokenClaims struct {
 }
 
 func GenerateAccessToken(userID uint, email, role, guard string, permissions []string) (string, error) {
-	expiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
-	if expiryMinutes == 0 {
+	expiryMinutes, err := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
+	if err != nil || expiryMinutes == 0 {
+		if os.Getenv("JWT_ACCESS_EXPIRY_MINUTES") != "" && err != nil {
+			slog.Warn("jwt: invalid JWT_ACCESS_EXPIRY_MINUTES, defaulting to 60")
+		}
 		expiryMinutes = 60
 	}
 	claims := AccessTokenClaims{
@@ -47,8 +51,11 @@ func GenerateAccessToken(userID uint, email, role, guard string, permissions []s
 }
 
 func GenerateRefreshToken(userID uint, tokenID string) (string, error) {
-	expiryDays, _ := strconv.Atoi(os.Getenv("JWT_REFRESH_EXPIRY_DAYS"))
-	if expiryDays == 0 {
+	expiryDays, err := strconv.Atoi(os.Getenv("JWT_REFRESH_EXPIRY_DAYS"))
+	if err != nil || expiryDays == 0 {
+		if os.Getenv("JWT_REFRESH_EXPIRY_DAYS") != "" && err != nil {
+			slog.Warn("jwt: invalid JWT_REFRESH_EXPIRY_DAYS, defaulting to 30")
+		}
 		expiryDays = 30
 	}
 	claims := RefreshTokenClaims{

@@ -66,6 +66,10 @@ func main() {
 
 	setupGinLogger()
 	r := gin.New()
+	if err := r.SetTrustedProxies(nil); err != nil {
+		slog.Error("failed to set trusted proxies", "error", err)
+		os.Exit(1)
+	}
 	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
 	r.Use(func(c *gin.Context) {

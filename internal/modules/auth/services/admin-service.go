@@ -14,6 +14,7 @@ import (
 	authrepo "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
 	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/personalaccesstoken/models"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AdminService interface {
@@ -30,9 +31,12 @@ func NewAuthService(repo authrepo.AuthRepository) AdminService {
 	return &authService{repo: repo}
 }
 
+const dummyBcryptHash = "$2a$10$CwTycUXWue0Thq9StjUM0uJ8Kge0G9wORUiC5MzHzWMbc8dV/xhHy"
+
 func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dto.AdminResponse, error) {
 	admin, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
+		_ = bcrypt.CompareHashAndPassword([]byte(dummyBcryptHash), []byte(req.Password))
 		return nil, constants.InvalidCredentials
 	}
 	isSuperAdmin := admin.UserType == constants.SuperAdminRole

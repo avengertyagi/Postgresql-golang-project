@@ -44,8 +44,10 @@ func (s *staffService) Create(ctx context.Context, req dto.StaffRequest) (*userm
 		Email:    req.Email,
 		RoleID:   req.RoleID,
 		Mobile:   req.Mobile,
-		Password: req.Password,
 		UserType: 1,
+	}
+	if err := staff.HashPassword(req.Password); err != nil {
+		return nil, err
 	}
 	if err := s.repo.Create(ctx, staff); err != nil {
 		return nil, err
@@ -72,6 +74,14 @@ func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest
 			return nil, constants.StaffAlreadyExists
 		}
 		staff.Name = name
+	}
+	staff.Email = req.Email
+	staff.Mobile = req.Mobile
+	staff.RoleID = req.RoleID
+	if req.Password != "" {
+		if err := staff.HashPassword(req.Password); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.repo.Update(ctx, staff); err != nil {
 		return nil, err

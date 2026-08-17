@@ -1,4 +1,4 @@
-package user
+package models
 
 import (
 	"time"
@@ -14,7 +14,7 @@ type User struct {
 	Role           rolemodel.Role `json:"role"            gorm:"foreignKey:role_id"`
 	Name           string         `json:"name"            gorm:"index;type:varchar(100);default:null"`
 	Email          string         `json:"email"           gorm:"index;type:varchar(150);uniqueIndex;not null"`
-	Mobile         uint16         `json:"mobile"          gorm:"index;type:int;default:null;uniqueIndex"`
+	Mobile         int            `json:"mobile"          gorm:"index;type:int;default:null;uniqueIndex"`
 	Password       string         `json:"-"               gorm:"type:varchar(255);not null"`
 	Status         bool           `json:"status"          gorm:"index;default:true"`
 	UserType       uint8          `json:"user_type" gorm:"index;default:null"`
