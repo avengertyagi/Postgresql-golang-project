@@ -1,6 +1,9 @@
 # Dependency directories
 /vendor/
 
+# Bin directories
+/bin/
+
 # Compiled binaries and test artifacts
 *.exe
 *.exe~

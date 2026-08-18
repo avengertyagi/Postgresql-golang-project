@@ -34,7 +34,7 @@ func (s *staffService) List(ctx context.Context, q dto.PaginationQuery) ([]userm
 
 func (s *staffService) Create(ctx context.Context, req dto.StaffRequest) (*usermodel.User, error) {
 	name := strings.TrimSpace(req.Name)
-	exists, err := s.staffRepo.ExistsByName(ctx, name, 0)
+	exists, err := s.staffRepo.ExistsByMobile(ctx, req.Mobile, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -72,15 +72,17 @@ func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest
 		return nil, err
 	}
 	name := strings.TrimSpace(req.Name)
-	if !strings.EqualFold(name, staff.Name) {
-		exists, err := s.staffRepo.ExistsByName(ctx, name, id)
-		if err != nil {
-			return nil, err
-		}
-		if exists {
-			return nil, staffconstants.StaffAlreadyExists
-		}
-		staff.Name = name
+	exists, err := s.staffRepo.ExistsByMobile(ctx, req.Mobile, id)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, staffconstants.StaffAlreadyExists
+	}
+	staff.Name = name
+	role, err := s.roleRepo.FindByID(ctx, req.RoleID)
+	if role == nil {
+		return nil, staffconstants.RoleIdNotFound
 	}
 	staff.Email = req.Email
 	staff.Mobile = req.Mobile

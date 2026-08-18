@@ -11,7 +11,7 @@ type User struct {
 	RoleID         uint           `json:"role_id,omitempty" gorm:"index"`
 	Role           rolemodel.Role `json:"role"            gorm:"foreignKey:RoleID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	Name           string         `json:"name"            gorm:"type:varchar(100);index"`
-	Email          string         `json:"email"           gorm:"type:varchar(150);uniqueIndex;not null"`
+	Email          string         `json:"email"           gorm:"type:varchar(150);not null"`
 	Mobile         int            `json:"mobile"          gorm:"type:int;uniqueIndex"`
 	Password       string         `json:"-"               gorm:"type:varchar(255);not null"`
 	Status         bool           `json:"status"          gorm:"default:true;index"`

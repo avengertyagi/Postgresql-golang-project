@@ -74,7 +74,7 @@ func (ctl *StaffController) Create(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": err.Error(), "data": gin.H{}})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error() + err.Error(), "data": gin.H{}})
 		slog.Error("staff create error", "error", err)
 		return
 	}
@@ -133,6 +133,10 @@ func (ctl *StaffController) Update(c *gin.Context) {
 		}
 		if errors.Is(err, staffconstants.StaffAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": staffconstants.StaffAlreadyExists.Error(), "data": gin.H{}})
+			return
+		}
+		if errors.Is(err, staffconstants.RoleIdNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": err.Error(), "data": gin.H{}})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})

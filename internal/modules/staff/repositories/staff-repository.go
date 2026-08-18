@@ -17,7 +17,7 @@ type StaffRepository interface {
 	FindAll(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error)
 	Update(ctx context.Context, staff *usermodel.User) error
 	Delete(ctx context.Context, id uint) error
-	ExistsByName(ctx context.Context, name string, excludeID uint) (bool, error)
+	ExistsByMobile(ctx context.Context, mobile int, excludeID uint) (bool, error)
 }
 
 type staffRepository struct {
@@ -95,9 +95,9 @@ func (r *staffRepository) FindByName(ctx context.Context, name string) (*usermod
 	return &user, nil
 }
 
-func (r *staffRepository) ExistsByName(ctx context.Context, name string, excludeID uint) (bool, error) {
+func (r *staffRepository) ExistsByMobile(ctx context.Context, mobile int, excludeID uint) (bool, error) {
 	var count int64
-	q := r.db.WithContext(ctx).Model(&usermodel.User{}).Where("name = ?", name)
+	q := r.db.WithContext(ctx).Model(&usermodel.User{}).Where("mobile = ?", mobile)
 	if excludeID > 0 {
 		q = q.Where("id <> ?", excludeID)
 	}
