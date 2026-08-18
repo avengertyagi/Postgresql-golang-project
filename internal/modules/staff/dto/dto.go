@@ -1,5 +1,9 @@
 package dto
 
+import (
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
+)
+
 type PaginationQuery struct {
 	Page    int    `form:"page,default=1" binding:"min=1"`
 	Limit   int    `form:"limit,default=10" binding:"min=1,max=100"`
@@ -10,9 +14,20 @@ type PaginationQuery struct {
 }
 
 type StaffRequest struct {
-	RoleID   uint   `json:"role_id" binding:"required"`
+	RoleID   uint   `json:"role_id"`
 	Name     string `json:"name"`
 	Email    string `json:"email"`
-	Mobile   int    `json:"mobile" binding:"omitempty,numeric,min=7,max=15"`
+	Mobile   int    `json:"mobile" binding:"omitempty,numeric"`
 	Password string `json:"password"`
+}
+
+type StaffResponse struct {
+	ID             uint           `json:"id"`
+	Name           string         `json:"name"`
+	Email          string         `json:"email"`
+	Mobile         int            `json:"mobile"`
+	Role           rolemodel.Role `json:"role"`
+	Status         bool           `json:"status"`
+	UserType       uint8          `json:"user_type"`
+	ProfilePicture string         `json:"profile_picture"`
 }

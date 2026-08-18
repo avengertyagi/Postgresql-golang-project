@@ -2,9 +2,11 @@ package admin
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
+	authconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/dto"
 	adminservice "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/services"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/validations"
@@ -21,7 +23,7 @@ func NewAuthController(s adminservice.AdminService) *AdminController {
 func (ctl *AdminController) Login(c *gin.Context) {
 	var req dto.AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
 	if err := validations.AdminLoginValidation(req); err != nil {
@@ -30,48 +32,75 @@ func (ctl *AdminController) Login(c *gin.Context) {
 	}
 	admin, err := ctl.service.Login(c.Request.Context(), req)
 	if err != nil {
-		if errors.Is(err, constants.InvalidCredentials) {
+		if errors.Is(err, authconstants.InvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
 			return
 		}
-		if errors.Is(err, constants.InactiveAccount) {
+		if errors.Is(err, authconstants.InactiveAccount) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
+		slog.Error("admin login error", "error", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LoginSuccess.Error(), "data": *admin})
+	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": authconstants.LoginSuccess.Error(), "data": *admin})
 }
 
 func (ctl *AdminController) Logout(c *gin.Context) {
 	var req dto.LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
 	if err := ctl.service.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+		if errors.Is(err, authconstants.SessionNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
+		if errors.Is(err, authconstants.SessionAlreadyRevoked) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
+		if errors.Is(err, authconstants.SessionExpired) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
+		slog.Error("admin logout error", "error", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": constants.LogoutSuccess.Error(), "data": gin.H{}})
+	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": authconstants.LogoutSuccess.Error(), "data": gin.H{}})
 }
 
 func (ctl *AdminController) RefreshToken(c *gin.Context) {
 	var req dto.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
 	resp, err := ctl.service.RefreshToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": err.Error(), "data": gin.H{}})
+		if errors.Is(err, authconstants.SessionNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
+		if errors.Is(err, authconstants.SessionAlreadyRevoked) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
+		if errors.Is(err, authconstants.SessionExpired) {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
+		slog.Error("admin refresh token error", "error", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"statusCode": http.StatusOK,
-		"message":    constants.RefreshSuccess.Error(),
+		"message":    authconstants.RefreshSuccess.Error(),
 		"data":       resp,
 	})
 }
@@ -95,7 +124,7 @@ func (ctl *AdminController) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":     true,
 		"statusCode": http.StatusOK,
-		"message":    constants.ProfileFetchSuccess.Error(),
+		"message":    authconstants.ProfileFetchSuccess.Error(),
 		"data":       profile,
 	})
 }

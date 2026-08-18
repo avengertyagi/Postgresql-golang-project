@@ -3,6 +3,7 @@ package validations
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/dto"
 )
@@ -52,6 +53,24 @@ func Validate(req dto.StaffRequest) error {
 	}
 	if !regexp.MustCompile(`[0-9]`).MatchString(req.Password) {
 		return fmt.Errorf("Password must contain at least one digit.")
+	}
+	if !regexp.MustCompile(`[!@#$%^&*(),.?":{}|<>]`).MatchString(req.Password) {
+		return fmt.Errorf("Password must contain special characters.")
+	}
+	if req.RoleID == 0 {
+		return fmt.Errorf("Role ID is required.")
+	}
+	if req.RoleID < 0 {
+		return fmt.Errorf("Role ID must be a positive integer.")
+	}
+	if req.Mobile == 0 {
+		return fmt.Errorf("Mobile number is required.")
+	}
+	if len(strconv.Itoa(req.Mobile)) < 10 {
+		return fmt.Errorf("Mobile number must be at least 10 digits long.")
+	}
+	if len(strconv.Itoa(req.Mobile)) > 15 {
+		return fmt.Errorf("Mobile number cannot be longer than 15 digits.")
 	}
 	return nil
 }

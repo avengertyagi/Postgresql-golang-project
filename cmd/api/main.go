@@ -17,12 +17,9 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/health"
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
-	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -31,6 +28,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("no .env file found; relying on process env")
 	}
+
+	logWriter, closeLog := setupLogging()
+	defer closeLog()
 
 	appConfig, err := config.LoadApp()
 	if err != nil {
@@ -64,25 +64,17 @@ func main() {
 		"port", appConfig.AppPort,
 	)
 
-	setupGinLogger()
+	//setupGinLogger()
 	r := gin.New()
 	if err := r.SetTrustedProxies(nil); err != nil {
 		slog.Error("failed to set trusted proxies", "error", err)
 		os.Exit(1)
 	}
+	r.Use(gin.LoggerWithWriter(logWriter))
 	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
 	r.Use(func(c *gin.Context) {
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
-		c.Header("X-XSS-Protection", "1; mode=block")
 		c.Header("Content-Type", "application/json; charset=utf-8")
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
-		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		c.Header("Referrer-Policy", "strict-origin")
 		c.Header("Permissions-Policy", "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()")
 		c.Next()
 	})
@@ -101,6 +93,7 @@ func main() {
 			"status":     false,
 			"statusCode": http.StatusNotFound,
 			"message":    "Route not found",
+			"data":       gin.H{},
 		})
 	})
 	r.NoMethod(func(c *gin.Context) {
@@ -108,14 +101,13 @@ func main() {
 			"status":     false,
 			"statusCode": http.StatusMethodNotAllowed,
 			"message":    "Method not allowed",
+			"data":       gin.H{},
 		})
 	})
-	r.Use(ginhelmet.Default())
 	r.Use(secure.New(secure.Config{
 		AllowedHosts:          strings.Split(appConfig.AllowedHosts, ","),
-		SSLRedirect:           false,
-		SSLHost:               "ssl.example.com",
-		STSSeconds:            315360000,
+		SSLRedirect:           appConfig.IsProd(),
+		STSSeconds:            31536000,
 		STSIncludeSubdomains:  true,
 		FrameDeny:             true,
 		ContentTypeNosniff:    true,
@@ -126,14 +118,9 @@ func main() {
 		SSLProxyHeaders:       map[string]string{"X-Forwarded-Proto": "https"},
 	}))
 	r.Use(middlewares.RequestSizeLimiter(10 * 1024 * 1024))
-	if appConfig.SessionSecret == "" {
-		slog.Error("SESSION_SECRET is required to use the sessions middleware")
-		os.Exit(1)
-	}
-	store := cookie.NewStore([]byte(appConfig.SessionSecret))
-	r.Use(sessions.Sessions("mysession", store))
+	r.Use(middlewares.TimeoutMiddleware(5 * time.Second))
 	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "1.0.0"})
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "1.0.0", "message": "Welcome to the Go lang."})
 	})
 	r.GET("/healthz", health.Healthz)
 	r.GET("/readyz", health.Readyz)
@@ -199,21 +186,21 @@ func setupGinLogger() {
 	gin.DefaultErrorWriter = io.MultiWriter(f, os.Stdout)
 }
 
-// func ginLoggerWithRequestID() gin.HandlerFunc {
-// 	return gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
-// 		return fmt.Sprintf("[req_id=%s] %s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
-// 			param.ClientIP,
-// 			param.TimeStamp.Format(time.RFC1123),
-// 			param.Method,
-// 			param.Path,
-// 			param.Request.Proto,
-// 			param.StatusCode,
-// 			param.Latency,
-// 			param.Request.UserAgent(),
-// 			param.ErrorMessage,
-// 		)
-// 	})
-// }
+func setupLogging() (io.Writer, func()) {
+	logPath := os.Getenv("GIN_LOG_PATH")
+	if logPath == "" {
+		logPath = "gin.log"
+	}
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		slog.Warn("gin log file open failed; logging to stdout only", "error", err)
+		return os.Stdout, func() {}
+	}
+	w := io.MultiWriter(f, os.Stdout)
+	gin.DefaultWriter = w
+	gin.DefaultErrorWriter = w
+	return w, func() { _ = f.Close() }
+}
 
 func recoveryHandler(c *gin.Context, recovered any) {
 	slog.Error("panic recovered",

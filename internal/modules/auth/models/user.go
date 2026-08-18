@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -10,17 +8,17 @@ import (
 
 type User struct {
 	gorm.Model
-	RoleID         uint           `json:"role_id"         gorm:"type:bigint;default:null"`
-	Role           rolemodel.Role `json:"role"            gorm:"foreignKey:role_id"`
-	Name           string         `json:"name"            gorm:"index;type:varchar(100);default:null"`
-	Email          string         `json:"email"           gorm:"index;type:varchar(150);uniqueIndex;not null"`
-	Mobile         int            `json:"mobile"          gorm:"index;type:int;default:null;uniqueIndex"`
+	RoleID         uint           `json:"role_id,omitempty" gorm:"index"`
+	Role           rolemodel.Role `json:"role"            gorm:"foreignKey:RoleID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	Name           string         `json:"name"            gorm:"type:varchar(100);index"`
+	Email          string         `json:"email"           gorm:"type:varchar(150);uniqueIndex;not null"`
+	Mobile         int            `json:"mobile"          gorm:"type:int;uniqueIndex"`
 	Password       string         `json:"-"               gorm:"type:varchar(255);not null"`
-	Status         bool           `json:"status"          gorm:"index;default:true"`
-	UserType       uint8          `json:"user_type" gorm:"index;default:null"`
-	ProfilePicture string         `json:"profile_picture" gorm:"type:varchar(500);default:null"`
-	DeviceToken    string         `json:"device_token"    gorm:"type:varchar(255);default:null"`
-	DeviceType     string         `json:"device_type"     gorm:"type:varchar(50);default:null"`
+	Status         bool           `json:"status"          gorm:"default:true;index"`
+	UserType       uint8          `json:"user_type"       gorm:"index"`
+	ProfilePicture string         `json:"profile_picture" gorm:"type:varchar(500)"`
+	DeviceToken    string         `json:"device_token"    gorm:"type:varchar(255)"`
+	DeviceType     string         `json:"device_type"     gorm:"type:varchar(50)"`
 }
 
 func (u *User) CheckPassword(password string) bool {
@@ -35,20 +33,4 @@ func (u *User) HashPassword(password string) error {
 	}
 	u.Password = string(hashedPassword)
 	return nil
-}
-
-type ProfileResponse struct {
-	ID             uint      `json:"id"`
-	Name           string    `json:"name"`
-	Email          string    `json:"email"`
-	UserType       uint8     `json:"user_type"`
-	Status         bool      `json:"status"`
-	ProfilePicture string    `json:"profile_picture"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
-}
-
-type UpdateProfileRequest struct {
-	Name           string `json:"name"            example:"John Doe"`
-	ProfilePicture string `json:"profile_picture" example:"https://example.com/pic.jpg"`
 }

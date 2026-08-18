@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	permissionmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/permission/models"
+	roleconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/role/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	"gorm.io/gorm"
@@ -49,7 +49,7 @@ func (r *roleRepository) FindAll(ctx context.Context, query dto.PaginationQuery)
 	}
 	offset := (query.Page - 1) * query.Limit
 	orderClause := query.SortBy + " " + query.SortDir
-	if err := role.Order(orderClause).Offset(offset).Limit(query.Limit).Find(&roles).Error; err != nil {
+	if err := role.Order(orderClause).Offset(offset).Limit(query.Limit).Preload("Permissions").Find(&roles).Error; err != nil {
 		return nil, 0, err
 	}
 	return roles, total, nil
@@ -66,7 +66,7 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return constants.RoleNotFound
+		return roleconstants.RoleNotFound
 	}
 	return nil
 
@@ -74,9 +74,9 @@ func (r *roleRepository) Delete(ctx context.Context, id uint) error {
 
 func (r *roleRepository) FindByID(ctx context.Context, id uint) (*rolemodel.Role, error) {
 	var role rolemodel.Role
-	err := r.db.WithContext(ctx).First(&role, id).Error
+	err := r.db.WithContext(ctx).Preload("Permissions").First(&role, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, constants.RoleNotFound
+		return nil, roleconstants.RoleNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -87,9 +87,9 @@ func (r *roleRepository) FindByID(ctx context.Context, id uint) (*rolemodel.Role
 
 func (r *roleRepository) FindByName(ctx context.Context, name string) (*rolemodel.Role, error) {
 	var role rolemodel.Role
-	err := r.db.WithContext(ctx).Where("name = ?", name).First(&role).Error
+	err := r.db.WithContext(ctx).Where("name = ?", name).Preload("Permissions").First(&role).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, constants.RoleNotFound
+		return nil, roleconstants.RoleNotFound
 	}
 	if err != nil {
 		return nil, err

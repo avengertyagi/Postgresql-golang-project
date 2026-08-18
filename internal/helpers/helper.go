@@ -22,3 +22,10 @@ func ParseID(c *gin.Context) (uint, error) {
 	}
 	return uint(id), nil
 }
+
+func StringOrNA(s *string) string {
+	if s == nil || *s == "" {
+		return "NA"
+	}
+	return *s
+}

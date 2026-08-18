@@ -7,24 +7,16 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
+	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 )
-
-func requestID(c *gin.Context) string {
-	if v, ok := c.Get("request_id"); ok {
-		if s, ok := v.(string); ok {
-			return s
-		}
-	}
-	return ""
-}
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			slog.Warn("auth: missing authorization header",
-				"request_id", requestID(c),
+				"request_id", requestid.Get(c),
 				"path", c.Request.URL.Path,
 			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.AuthorizationHeader.Error()})
@@ -38,13 +30,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims, err := helpers.ParseAccessToken(parts[1])
 		if err != nil {
 			slog.Warn("auth: invalid access token",
-				"request_id", requestID(c),
+				"request_id", requestid.Get(c),
 				"error", err.Error(),
 			)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.SessionNotFound.Error()})
 			return
 		}
-		slog.Debug("auth: token verified", "request_id", requestID(c), "user_id", claims.UserID, "guard", claims.Guard)
+		slog.Debug("auth: token verified", "request_id", requestid.Get(c), "user_id", claims.UserID, "guard", claims.Guard)
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)

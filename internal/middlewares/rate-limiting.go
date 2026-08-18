@@ -46,7 +46,7 @@ func RateLimiter() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"status":     false,
 				"statusCode": http.StatusTooManyRequests,
-				"error":      "Too many requests. Please try again later.",
+				"message":    "Too many requests. Please try again later.",
 			})
 			return
 		}

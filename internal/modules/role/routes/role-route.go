@@ -20,6 +20,6 @@ func RoleRoutes(r *gin.RouterGroup) {
 	protected.GET("/", middlewares.HasPermission("role-list"), roleController.List)
 	protected.POST("/create", middlewares.HasPermission("role-create"), roleController.Create)
 	protected.GET("/edit/:id", middlewares.HasPermission("role-edit"), roleController.GetByID)
-	protected.PUT("/update/:id", middlewares.HasPermission("role-update"), roleController.Update)
+	protected.PATCH("/update/:id", middlewares.HasPermission("role-update"), roleController.Update)
 	protected.DELETE("/destroy/:id", middlewares.HasPermission("role-delete"), roleController.Delete)
 }

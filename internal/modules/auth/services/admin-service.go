@@ -9,8 +9,8 @@ import (
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	helpers "github.com/akshit_tyagi/postgresql_project/internal/helpers"
+	authconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/dto"
-	usermodel "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
 	authrepo "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
 	personalaccesstokenmodel "github.com/akshit_tyagi/postgresql_project/internal/modules/personalaccesstoken/models"
 	"github.com/google/uuid"
@@ -21,7 +21,7 @@ type AdminService interface {
 	Login(ctx context.Context, req dto.AdminLoginRequest) (*dto.AdminResponse, error)
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenRefreshResponse, error)
-	GetProfile(ctx context.Context, userID uint) (*usermodel.ProfileResponse, error)
+	GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error)
 }
 type authService struct {
 	repo authrepo.AuthRepository
@@ -37,14 +37,14 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 	admin, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		_ = bcrypt.CompareHashAndPassword([]byte(dummyBcryptHash), []byte(req.Password))
-		return nil, constants.InvalidCredentials
+		return nil, authconstants.InvalidCredentials
 	}
 	isSuperAdmin := admin.UserType == constants.SuperAdminRole
 	if !isSuperAdmin && !admin.Status {
-		return nil, constants.InactiveAccount
+		return nil, authconstants.InactiveAccount
 	}
 	if !admin.CheckPassword(req.Password) {
-		return nil, constants.InvalidCredentials
+		return nil, authconstants.InvalidCredentials
 	}
 	userID := admin.ID
 	permissions := s.repo.GetUserPermissions(ctx, admin)
@@ -94,18 +94,18 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 
 func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 	if _, err := helpers.ParseRefreshToken(refreshToken); err != nil {
-		return constants.SessionNotFound
+		return authconstants.SessionNotFound
 	}
 	tokenHash := helpers.HashToken(refreshToken)
 	pat, err := s.repo.FindTokenByHash(ctx, tokenHash)
 	if err != nil {
-		return constants.SessionNotFound
+		return authconstants.SessionNotFound
 	}
 	if pat.Revoked {
-		return constants.SessionAlreadyRevoked
+		return authconstants.SessionAlreadyRevoked
 	}
 	if time.Now().After(pat.ExpiresAt) {
-		return constants.SessionExpired
+		return authconstants.SessionExpired
 	}
 	if err := s.repo.RevokeRefreshToken(ctx, tokenHash); err != nil {
 		return constants.SomethingWentWrong
@@ -116,7 +116,7 @@ func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) (*dto.TokenRefreshResponse, error) {
 	claims, err := helpers.ParseRefreshToken(rawRefreshToken)
 	if err != nil {
-		return nil, constants.SessionNotFound
+		return nil, authconstants.SessionNotFound
 	}
 	pat, err := s.repo.FindTokenByHash(ctx, helpers.HashToken(rawRefreshToken))
 	if err != nil {
@@ -154,18 +154,18 @@ func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) 
 	}, nil
 }
 
-func (s *authService) GetProfile(ctx context.Context, userID uint) (*usermodel.ProfileResponse, error) {
+func (s *authService) GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
 	user, err := s.repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, constants.NotFound
 	}
-	return &usermodel.ProfileResponse{
+	return &dto.ProfileResponse{
 		ID:             user.ID,
-		Name:           user.Name,
-		Email:          user.Email,
+		Name:           helpers.StringOrNA(&user.Name),
+		Email:          helpers.StringOrNA(&user.Email),
 		UserType:       user.UserType,
 		Status:         user.Status,
-		ProfilePicture: user.ProfilePicture,
+		ProfilePicture: helpers.StringOrNA(&user.ProfilePicture),
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}, nil

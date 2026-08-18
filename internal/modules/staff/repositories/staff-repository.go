@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
+	staffconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/dto"
 	"gorm.io/gorm"
 )
@@ -47,7 +47,7 @@ func (r *staffRepository) FindAll(ctx context.Context, query dto.PaginationQuery
 	}
 	offset := (query.Page - 1) * query.Limit
 	orderClause := query.SortBy + " " + query.SortDir
-	if err := staffQuery.Order(orderClause).Offset(offset).Limit(query.Limit).Find(&users).Error; err != nil {
+	if err := staffQuery.Order(orderClause).Offset(offset).Limit(query.Limit).Preload("Role").Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 	return users, total, nil
@@ -64,7 +64,7 @@ func (r *staffRepository) Delete(ctx context.Context, id uint) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return constants.StaffNotFound
+		return staffconstants.StaffNotFound
 	}
 	return nil
 
@@ -74,7 +74,7 @@ func (r *staffRepository) FindByID(ctx context.Context, id uint) (*usermodel.Use
 	var user usermodel.User
 	err := r.db.WithContext(ctx).First(&user, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, constants.StaffNotFound
+		return nil, staffconstants.StaffNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (r *staffRepository) FindByName(ctx context.Context, name string) (*usermod
 	var user usermodel.User
 	err := r.db.WithContext(ctx).Where("name = ?", name).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, constants.StaffNotFound
+		return nil, staffconstants.StaffNotFound
 	}
 	if err != nil {
 		return nil, err

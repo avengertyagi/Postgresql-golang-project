@@ -22,12 +22,12 @@ func HasPermission(permission string) gin.HandlerFunc {
 
 		permissionsVal, exists := c.Get("permissions")
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden.Error()})
 			return
 		}
 		permissions, ok := permissionsVal.([]string)
 		if !ok || !helpers.Contains(permissions, permission) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden})
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": false, "statusCode": http.StatusForbidden, "message": constants.Forbidden.Error()})
 			return
 		}
 		c.Next()

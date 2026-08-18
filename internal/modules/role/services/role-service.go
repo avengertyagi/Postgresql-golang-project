@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/akshit_tyagi/postgresql_project/internal/constants"
+	roleconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/role/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/role/dto"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	rolerepo "github.com/akshit_tyagi/postgresql_project/internal/modules/role/repositories"
@@ -37,7 +37,7 @@ func (s *roleService) Create(ctx context.Context, req dto.RoleRequest) (*rolemod
 		return nil, err
 	}
 	if exists {
-		return nil, constants.RoleAlreadyExists
+		return nil, roleconstants.RoleAlreadyExists
 	}
 	role := &rolemodel.Role{
 		Name: name,
@@ -69,7 +69,7 @@ func (s *roleService) Update(ctx context.Context, id uint, req dto.RoleRequest) 
 			return nil, err
 		}
 		if exists {
-			return nil, constants.RoleAlreadyExists
+			return nil, roleconstants.RoleAlreadyExists
 		}
 		role.Name = name
 	}

@@ -12,27 +12,22 @@ func PermissionSeeder() {
 		{
 			Name:      "role-list",
 			GuardName: "web",
-			Status:    true,
 		},
 		{
 			Name:      "role-create",
 			GuardName: "web",
-			Status:    true,
 		},
 		{
 			Name:      "role-update",
 			GuardName: "web",
-			Status:    true,
 		},
 		{
 			Name:      "role-edit",
 			GuardName: "web",
-			Status:    true,
 		},
 		{
 			Name:      "role-delete",
 			GuardName: "web",
-			Status:    true,
 		},
 	}
 	for _, permission := range permissions {
