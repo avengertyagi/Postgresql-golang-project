@@ -3,11 +3,12 @@ package constants
 import "errors"
 
 var (
-	RoleFetchedSuccess   = errors.New("Role fetched successfully.")
-	RoleRetrievedSuccess = errors.New("Role retrieved successfully.")
-	RoleCreatedSuccess   = errors.New("Role created successfully.")
-	RoleUpdatedSuccess   = errors.New("Role updated successfully.")
-	RoleDeletedSuccess   = errors.New("Role deleted successfully.")
+	RoleFetchedSuccess       = errors.New("Role fetched successfully.")
+	RoleRetrievedSuccess     = errors.New("Role retrieved successfully.")
+	RoleCreatedSuccess       = errors.New("Role created successfully.")
+	RoleUpdatedSuccess       = errors.New("Role updated successfully.")
+	RoleStatusUpdatedSuccess = errors.New("Role status updated successfully.")
+	RoleDeletedSuccess       = errors.New("Role deleted successfully.")
 
 	RoleAlreadyExists  = errors.New("Role already exists.")
 	InvalidCredentials = errors.New("These credentials do not match our records.")

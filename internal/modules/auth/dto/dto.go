@@ -62,3 +62,8 @@ type UpdateProfileRequest struct {
 	Name           string `json:"name"            example:"John Doe"`
 	ProfilePicture string `json:"profile_picture" example:"https://example.com/pic.jpg"`
 }
+
+type AdminUpdateProfileRequest struct {
+	Name  string `form:"name"`
+	Email string `form:"email"`
+}

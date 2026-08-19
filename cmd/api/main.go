@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/bootstrap"
 	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/database/migrations"
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
@@ -127,7 +128,9 @@ func main() {
 
 	v1 := r.Group("/api/v1")
 	{
-		routes.Routes(v1)
+		container := bootstrap.NewContainer(config.DB)
+		routes.Routes(v1, container)
+
 	}
 
 	srv := &http.Server{

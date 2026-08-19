@@ -15,6 +15,7 @@ type RoleService interface {
 	GetByID(ctx context.Context, id uint) (*rolemodel.Role, error)
 	List(ctx context.Context, q dto.PaginationQuery) ([]rolemodel.Role, int64, error)
 	Update(ctx context.Context, id uint, req dto.RoleRequest) (*rolemodel.Role, error)
+	UpdateStatus(ctx context.Context, id uint) (*rolemodel.Role, error)
 	Delete(ctx context.Context, id uint) (*rolemodel.Role, error)
 }
 
@@ -80,6 +81,18 @@ func (s *roleService) Update(ctx context.Context, id uint, req dto.RoleRequest) 
 		return nil, err
 	}
 
+	return role, nil
+}
+
+func (s *roleService) UpdateStatus(ctx context.Context, id uint) (*rolemodel.Role, error) {
+	role, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	role.Status = !role.Status
+	if err := s.repo.Update(ctx, role); err != nil {
+		return nil, err
+	}
 	return role, nil
 }
 

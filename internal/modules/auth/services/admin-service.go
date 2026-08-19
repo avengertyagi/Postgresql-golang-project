@@ -3,8 +3,10 @@ package admin
 import (
 	"context"
 	"errors"
+	"mime/multipart"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
@@ -22,6 +24,7 @@ type AdminService interface {
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenRefreshResponse, error)
 	GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error)
+	UpdateProfile(ctx context.Context, userID uint, req dto.AdminUpdateProfileRequest, profilePictureFile interface{}) (*dto.ProfileResponse, error)
 }
 type authService struct {
 	repo authrepo.AuthRepository
@@ -169,4 +172,33 @@ func (s *authService) GetProfile(ctx context.Context, userID uint) (*dto.Profile
 		CreatedAt:      user.CreatedAt,
 		UpdatedAt:      user.UpdatedAt,
 	}, nil
+}
+
+func (s *authService) UpdateProfile(ctx context.Context, userID uint, req dto.AdminUpdateProfileRequest, profilePictureFile interface{}) (*dto.ProfileResponse, error) {
+	user, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, constants.NotFound
+	}
+	if name := strings.TrimSpace(req.Name); name != "" {
+		user.Name = name
+	}
+	if email := strings.TrimSpace(req.Email); email != "" {
+		user.Email = email
+	}
+	if profilePictureFile != nil {
+		file, ok := profilePictureFile.(*multipart.FileHeader)
+		if !ok {
+			return nil, errors.New("invalid file format")
+		}
+		result, err := helpers.UploadSingleImage(ctx, file, "profile-pictures")
+		if err != nil {
+			return nil, err
+		}
+		user.ProfilePicture = result.URL
+	}
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return nil, constants.SomethingWentWrong
+	}
+	return s.GetProfile(ctx, userID)
 }

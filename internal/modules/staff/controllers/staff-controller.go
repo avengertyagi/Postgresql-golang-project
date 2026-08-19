@@ -151,6 +151,30 @@ func (ctl *StaffController) Update(c *gin.Context) {
 	})
 }
 
+func (ctl *StaffController) UpdateStatus(c *gin.Context) {
+	id, err := helpers.ParseID(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
+		return
+	}
+	role, err := ctl.service.UpdateStatus(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, staffconstants.StaffNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": staffconstants.StaffNotFound.Error(), "data": gin.H{}})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
+		slog.Error("staff update status error", "error", err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":     true,
+		"statusCode": http.StatusOK,
+		"message":    staffconstants.StaffStatusUpdatedSuccess.Error(),
+		"data":       *role,
+	})
+}
+
 func (ctl *StaffController) Delete(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {

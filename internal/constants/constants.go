@@ -25,4 +25,12 @@ var (
 	NotFound           = errors.New("Record not found.")
 	SomethingWentWrong = errors.New("Something went wrong. Please try again later.")
 	InvalidRequestBody = errors.New("Please provide valid JSON data.")
+
+	ImageUploadSuccess = errors.New("Image uploaded successfully.")
+	ImageDeleteSuccess = errors.New("Image deleted successfully.")
+	InvalidImageType   = errors.New("Only JPEG, PNG, WEBP and GIF images are allowed.")
+	ImageTooLarge      = errors.New("Image size must not exceed 5 MB.")
+	ImageUploadFailed  = errors.New("Failed to upload image. Please try again later.")
+	ImageDeleteFailed  = errors.New("Failed to delete image. Please try again later.")
+	ImageNotFound      = errors.New("Image not found.")
 )

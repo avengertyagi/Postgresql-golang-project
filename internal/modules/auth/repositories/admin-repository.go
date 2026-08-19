@@ -12,6 +12,7 @@ import (
 type AuthRepository interface {
 	FindByEmail(ctx context.Context, email string) (*usermodel.User, error)
 	FindByID(ctx context.Context, id uint) (*usermodel.User, error)
+	Update(ctx context.Context, user *usermodel.User) error
 	SaveToken(ctx context.Context, pat *personalaccesstokenmodel.PersonalAccessToken) error
 	FindTokenByHash(ctx context.Context, tokenHash string) (*personalaccesstokenmodel.PersonalAccessToken, error)
 	RevokeRefreshToken(ctx context.Context, tokenHash string) error
@@ -39,11 +40,15 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*usermo
 
 func (r *authRepository) FindByID(ctx context.Context, id uint) (*usermodel.User, error) {
 	var admin usermodel.User
-	err := r.db.Model(&usermodel.User{}).Preload("Role.Permissions").Where("id = ?", id).First(&admin, id).Error
+	err := r.db.WithContext(ctx).Model(&usermodel.User{}).Preload("Role.Permissions").Where("id = ?", id).First(&admin).Error
 	if err != nil {
 		return nil, err
 	}
 	return &admin, nil
+}
+
+func (r *authRepository) Update(ctx context.Context, user *usermodel.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
 }
 
 func (r *authRepository) SaveToken(ctx context.Context, pat *personalaccesstokenmodel.PersonalAccessToken) error {

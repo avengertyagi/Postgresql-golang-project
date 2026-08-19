@@ -16,6 +16,7 @@ type StaffService interface {
 	GetByID(ctx context.Context, id uint) (*usermodel.User, error)
 	List(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error)
 	Update(ctx context.Context, id uint, req dto.StaffRequest) (*usermodel.User, error)
+	UpdateStatus(ctx context.Context, id uint) (*usermodel.User, error)
 	Delete(ctx context.Context, id uint) (*usermodel.User, error)
 }
 
@@ -96,6 +97,18 @@ func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest
 		return nil, err
 	}
 
+	return staff, nil
+}
+
+func (s *staffService) UpdateStatus(ctx context.Context, id uint) (*usermodel.User, error) {
+	staff, err := s.staffRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	staff.Status = !staff.Status
+	if err := s.staffRepo.Update(ctx, staff); err != nil {
+		return nil, err
+	}
 	return staff, nil
 }
 
