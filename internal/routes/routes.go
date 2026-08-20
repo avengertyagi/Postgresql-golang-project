@@ -7,6 +7,7 @@ import (
 	authroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/routes"
 	roleroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/role/routes"
 	staffroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/routes"
+	websocketroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/routes"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,4 +19,5 @@ func Routes(r *gin.RouterGroup, c *bootstrap.Container) {
 	authroutes.AdminRoutes(r, c.AdminController)
 	roleroutes.RoleRoutes(adminProtected, c.RoleController)
 	staffroutes.StaffRoutes(adminProtected, c.StaffController)
+	websocketroutes.WebSocketRoutes(r, c.WebSocketController)
 }

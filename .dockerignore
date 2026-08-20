@@ -1,0 +1,10 @@
+.git
+.gitignore
+*.md
+gin.log
+main
+bin/
+.env
+.env.local
+.vscode
+.idea

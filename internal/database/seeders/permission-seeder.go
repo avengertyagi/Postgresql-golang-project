@@ -29,6 +29,26 @@ func PermissionSeeder() {
 			Name:      "role-delete",
 			GuardName: "web",
 		},
+		{
+			Name:      "staff-list",
+			GuardName: "web",
+		},
+		{
+			Name:      "staff-create",
+			GuardName: "web",
+		},
+		{
+			Name:      "staff-update",
+			GuardName: "web",
+		},
+		{
+			Name:      "staff-edit",
+			GuardName: "web",
+		},
+		{
+			Name:      "staff-delete",
+			GuardName: "web",
+		},
 	}
 	for _, permission := range permissions {
 		result := config.DB.Where(permissionmodel.Permission{Name: permission.Name}).FirstOrCreate(&permission)

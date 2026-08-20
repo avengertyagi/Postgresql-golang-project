@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    ports:
+      # DB_PORT (5432) is the port Postgres listens on INSIDE the docker
+      # network — the api container always reaches it there, regardless of
+      # the host mapping below. HOST_DB_PORT is only for connecting from
+      # your host machine (e.g. a GUI client) and defaults to 5433 so it
+      # doesn't clash with a Postgres you might already have running
+      # natively on 5432.
+      - "${HOST_DB_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Override: inside the compose network, Postgres is reachable at the
+      # service name "postgres", not 127.0.0.1 (which inside a container
+      # means "this container itself"). Everything else in .env is used as-is.
+      DB_HOST: postgres
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -48,6 +48,22 @@ test:
 clean:
 	rm -rf $(BINARY_DIR) gin.log
 
+## docker-up: build (if needed) and start Postgres + API in the background
+docker-up:
+	docker compose up -d --build
+ 
+## docker-down: stop and remove containers (DB data survives, kept in a named volume)
+docker-down:
+	docker compose down
+ 
+## docker-logs: tail the API container's logs
+docker-logs:
+	docker compose logs -f api
+ 
+## docker-rebuild: rebuild the API image from scratch (after go.mod/dependency changes)
+docker-rebuild:
+	docker compose build --no-cache api
+
 ## help: list all available commands with their description
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  make /'

@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: erp
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: erp
+spec:
+  replicas: 1 # Postgres is stateful — never scale this beyond 1 replica this way
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            # Reuses the same "app-env" Secret created from your .env file —
+            # POSTGRES_* is what the official postgres image expects, mapped
+            # from your existing DB_* variable names.
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: app-env, key: DB_USERNAME } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: app-env, key: DB_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: app-env, key: DB_DATABASE } }
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "$(POSTGRES_USER)", "-d", "$(POSTGRES_DB)"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres # DNS name other pods use to reach this: postgres.erp.svc.cluster.local (or just "postgres" within the same namespace)
+  namespace: erp
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

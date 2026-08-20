@@ -14,33 +14,41 @@ import (
 	staffcontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/controllers"
 	staffrepositories "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/repositories"
 	staffservices "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/services"
+
+	websocketcontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/controllers"
+	websocketservices "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/services"
 )
 
 type Container struct {
-	AdminController *authcontrollers.AdminController
-	RoleController  *rolecontrollers.RoleController
-	StaffController *staffcontrollers.StaffController
+	AdminController     *authcontrollers.AdminController
+	RoleController      *rolecontrollers.RoleController
+	StaffController     *staffcontrollers.StaffController
+	WebSocketController *websocketcontrollers.WebSocketController
+	WebSocketHub        *websocketservices.Hub
 }
 
 func NewContainer(db *gorm.DB) *Container {
-	// auth module
 	authRepo := authrepositories.NewAuthRepository(db)
 	authService := authservices.NewAuthService(authRepo)
 	adminController := authcontrollers.NewAuthController(authService)
 
-	// role module
 	roleRepo := rolerepositories.NewRoleRepository(db)
 	roleService := roleservices.NewRoleService(roleRepo)
 	roleController := rolecontrollers.NewRoleController(roleService)
 
-	// staff module (depends on both staff repo and role repo)
 	staffRepo := staffrepositories.NewStaffRepository(db)
 	staffService := staffservices.NewStaffService(staffRepo, roleRepo)
 	staffController := staffcontrollers.NewStaffController(staffService)
 
+	websocketHub := websocketservices.NewHub()
+	go websocketHub.Run()
+	websocketController := websocketcontrollers.NewWebSocketController(websocketHub)
+
 	return &Container{
-		AdminController: adminController,
-		RoleController:  roleController,
-		StaffController: staffController,
+		AdminController:     adminController,
+		RoleController:      roleController,
+		StaffController:     staffController,
+		WebSocketController: websocketController,
+		WebSocketHub:        websocketHub,
 	}
 }
