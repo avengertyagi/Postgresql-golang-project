@@ -14,4 +14,6 @@ var (
 	ProfileUpdateSuccess  = errors.New("Profile updated successfully.")
 	InvalidCredentials    = errors.New("These credentials do not match our records.")
 	InactiveAccount       = errors.New("Your account is inactive. Please contact support.")
+	EmailAlreadyExists    = errors.New("Email already exists. Please use a different email.")
+	MobileAlreadyExists   = errors.New("Mobile number already exists. Please use a different mobile number.")
 )

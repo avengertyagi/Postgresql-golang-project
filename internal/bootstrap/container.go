@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	authcontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/controllers/admin"
+	usercontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/controllers/user"
 	authrepositories "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
 	authservices "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/services"
 
@@ -21,6 +22,7 @@ import (
 
 type Container struct {
 	AdminController     *authcontrollers.AdminController
+	UserController      *usercontrollers.UserController
 	RoleController      *rolecontrollers.RoleController
 	StaffController     *staffcontrollers.StaffController
 	WebSocketController *websocketcontrollers.WebSocketController
@@ -31,6 +33,10 @@ func NewContainer(db *gorm.DB) *Container {
 	authRepo := authrepositories.NewAuthRepository(db)
 	authService := authservices.NewAuthService(authRepo)
 	adminController := authcontrollers.NewAuthController(authService)
+	tempUserRepo := authrepositories.NewTempUserRepository(db)
+	tempUserService := authservices.NewTempUserService(tempUserRepo, authRepo)
+	otpService := authservices.NewOTPService(db, tempUserRepo)
+	userController := usercontrollers.NewUserController(tempUserService, otpService)
 
 	roleRepo := rolerepositories.NewRoleRepository(db)
 	roleService := roleservices.NewRoleService(roleRepo)
@@ -46,6 +52,7 @@ func NewContainer(db *gorm.DB) *Container {
 
 	return &Container{
 		AdminController:     adminController,
+		UserController:      userController,
 		RoleController:      roleController,
 		StaffController:     staffController,
 		WebSocketController: websocketController,

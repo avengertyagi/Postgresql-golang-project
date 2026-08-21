@@ -10,7 +10,9 @@ import (
 )
 
 type AuthRepository interface {
+	Create(ctx context.Context, user *usermodel.User) error
 	FindByEmail(ctx context.Context, email string) (*usermodel.User, error)
+	FindByMobile(ctx context.Context, mobile int) (*usermodel.User, error)
 	FindByID(ctx context.Context, id uint) (*usermodel.User, error)
 	Update(ctx context.Context, user *usermodel.User) error
 	SaveToken(ctx context.Context, pat *personalaccesstokenmodel.PersonalAccessToken) error
@@ -38,6 +40,15 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*usermo
 	return &admin, nil
 }
 
+func (r *authRepository) FindByMobile(ctx context.Context, mobile int) (*usermodel.User, error) {
+	var admin usermodel.User
+	err := r.db.WithContext(ctx).Model(&usermodel.User{}).Preload("Role.Permissions").Where("mobile = ?", mobile).First(&admin).Error
+	if err != nil {
+		return nil, err
+	}
+	return &admin, nil
+}
+
 func (r *authRepository) FindByID(ctx context.Context, id uint) (*usermodel.User, error) {
 	var admin usermodel.User
 	err := r.db.WithContext(ctx).Model(&usermodel.User{}).Preload("Role.Permissions").Where("id = ?", id).First(&admin).Error
@@ -45,6 +56,10 @@ func (r *authRepository) FindByID(ctx context.Context, id uint) (*usermodel.User
 		return nil, err
 	}
 	return &admin, nil
+}
+
+func (r *authRepository) Create(ctx context.Context, user *usermodel.User) error {
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
 func (r *authRepository) Update(ctx context.Context, user *usermodel.User) error {

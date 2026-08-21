@@ -19,5 +19,10 @@ func Routes(r *gin.RouterGroup, c *bootstrap.Container) {
 	authroutes.AdminRoutes(r, c.AdminController)
 	roleroutes.RoleRoutes(adminProtected, c.RoleController)
 	staffroutes.StaffRoutes(adminProtected, c.StaffController)
-	websocketroutes.WebSocketRoutes(r, c.WebSocketController)
+
+	userProtected := r.Group("user")
+	//userProtected.Use(middlewares.AuthMiddleware())
+	authroutes.UserRoutes(userProtected, c.UserController)
+	websocketroutes.WebSocketRoutes(userProtected, c.WebSocketController)
+
 }

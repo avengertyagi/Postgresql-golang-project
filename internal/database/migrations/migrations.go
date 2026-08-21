@@ -13,6 +13,8 @@ func Migrate() error {
 		&permission.Permission{},
 		&role.Role{},
 		&user.User{},
+		&user.TempUser{},
+		&user.OTP{},
 		&personalaccesstoken.PersonalAccessToken{},
 	)
 }
