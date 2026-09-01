@@ -18,6 +18,7 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/health"
 	"github.com/akshit_tyagi/postgresql_project/internal/routes"
+	"github.com/danielkov/gin-helmet/ginhelmet"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-contrib/secure"
@@ -74,6 +75,7 @@ func main() {
 	r.Use(gin.LoggerWithWriter(logWriter))
 	r.Use(requestid.New())
 	r.Use(gin.CustomRecovery(recoveryHandler))
+	r.Use(ginhelmet.Default())
 	r.Use(func(c *gin.Context) {
 		c.Header("Content-Type", "application/json; charset=utf-8")
 		c.Header("Permissions-Policy", "geolocation=(),midi=(),sync-xhr=(),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()")
@@ -137,8 +139,8 @@ func main() {
 		Addr:         ":" + appConfig.AppPort,
 		Handler:      r.Handler(),
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	go func() {
@@ -154,7 +156,7 @@ func main() {
 	<-quit
 	slog.Info("shutdown signal received")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		slog.Error("server shutdown error", "error", err)

@@ -5,22 +5,22 @@ import (
 	"net/http"
 
 	"github.com/akshit_tyagi/postgresql_project/internal/helpers"
-	"github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/services"
+	"github.com/akshit_tyagi/postgresql_project/internal/modules/socket/services"
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 )
 
-type WebSocketController struct {
+type SocketController struct {
 	hub *services.Hub
 }
 
-func NewWebSocketController(hub *services.Hub) *WebSocketController {
-	return &WebSocketController{
+func NewSocketController(hub *services.Hub) *SocketController {
+	return &SocketController{
 		hub: hub,
 	}
 }
 
-func (wsc *WebSocketController) HandleWebSocket(c *gin.Context) {
+func (sc *SocketController) HandleSocket(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
 		slog.Warn("WebSocket: missing token",
@@ -65,8 +65,8 @@ func (wsc *WebSocketController) HandleWebSocket(c *gin.Context) {
 	userID := c.GetString("user_id")
 	userName := claims.Email
 
-	client := wsc.hub.NewClient(conn, userID, userName)
-	wsc.hub.Register <- client
+	client := sc.hub.NewClient(conn, userID, userName)
+	sc.hub.Register <- client
 
 	slog.Info("New WebSocket connection",
 		"user_id", userID,
@@ -77,11 +77,11 @@ func (wsc *WebSocketController) HandleWebSocket(c *gin.Context) {
 	go client.WritePump()
 }
 
-func (wsc *WebSocketController) GetStats(c *gin.Context) {
-	connectedClients := wsc.hub.GetConnectedClients()
+func (sc *SocketController) GetStats(c *gin.Context) {
+	connectedClients := sc.hub.GetConnectedClients()
 	c.JSON(http.StatusOK, gin.H{
 		"status":            true,
 		"connected_clients": connectedClients,
-		"message":           "WebSocket stats",
+		"message":           "Socket stats",
 	})
 }

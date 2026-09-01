@@ -6,8 +6,8 @@ import (
 	"github.com/akshit_tyagi/postgresql_project/internal/middlewares"
 	authroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/routes"
 	roleroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/role/routes"
+	socketroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/socket/routes"
 	staffroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/routes"
-	websocketroutes "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/routes"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +23,6 @@ func Routes(r *gin.RouterGroup, c *bootstrap.Container) {
 	userProtected := r.Group("user")
 	//userProtected.Use(middlewares.AuthMiddleware())
 	authroutes.UserRoutes(userProtected, c.UserController)
-	websocketroutes.WebSocketRoutes(userProtected, c.WebSocketController)
+	socketroutes.SocketRoutes(userProtected, c.SocketController)
 
 }

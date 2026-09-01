@@ -30,18 +30,10 @@ func NewTempUserService(r tempuserrepo.TempUserRepository, ar authrepo.AuthRepos
 
 func (s *tempUserService) Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserRegisterResponse, error) {
 	existingUser, err := s.authRepo.FindByEmail(ctx, req.Email)
-	// if err != nil && !errors.Is(err, constants.UserNotFound) {
-	// 	slog.Error("error checking existing user by email", "error", err)
-	// 	return nil, err
-	// }
 	if existingUser != nil {
 		return nil, authconstants.EmailAlreadyExists
 	}
 	existingUser, err = s.authRepo.FindByMobile(ctx, req.Mobile)
-	// if err != nil && !errors.Is(err, constants.UserNotFound) {
-	// 	slog.Error("error checking existing user by mobile", "error", err)
-	// 	return nil, err
-	// }
 	if existingUser != nil {
 		return nil, authconstants.MobileAlreadyExists
 	}

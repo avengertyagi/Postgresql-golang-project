@@ -2,8 +2,8 @@
 /vendor/
 
 # Bin directories
-/bin/
-
+bin/
+dist/
 # Compiled binaries and test artifacts
 *.exe
 *.exe~
@@ -25,9 +25,12 @@
 .env.*
 !.env.example
 .env.local
+*.pem
+*.key
 
 # Logs and local databases
 *.log
+logs/
 gin.log
 
 # System files & IDE directories

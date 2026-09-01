@@ -8,9 +8,11 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/dto"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
+	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	"gorm.io/gorm"
 )
 
@@ -33,9 +35,13 @@ func (s *otpService) Create(ctx context.Context, user *models.TempUser) (*dto.Us
 	if err != nil {
 		return nil, err
 	}
-	mobileCode, err := generateOTP()
-	if err != nil {
-		return nil, err
+	mobileCode := ""
+	if user.CountryCode == "+91" || user.CountryCode == "91" {
+		generatedMobileCode, err := generateOTP()
+		if err != nil {
+			return nil, err
+		}
+		mobileCode = generatedMobileCode
 	}
 	otp := &models.OTP{TempUserID: user.ID, EmailCode: emailCode, MobileCode: mobileCode, ExpiresAt: time.Now().Add(10 * time.Minute)}
 	if err := s.db.WithContext(ctx).Where("temp_user_id = ?", user.ID).Assign(ototpValues(otp)).FirstOrCreate(otp).Error; err != nil {
@@ -61,13 +67,31 @@ func (s *otpService) Verify(ctx context.Context, req dto.VerifyOTPRequest) (*dto
 	if time.Now().After(otp.ExpiresAt) || otp.EmailCode != req.EmailOTP || otp.MobileCode != req.MobileOTP {
 		return nil, fmt.Errorf("invalid or expired OTP")
 	}
+
+	var userRole rolemodel.Role
+	if err := s.db.WithContext(ctx).Where("name = ?", "User").FirstOrCreate(&userRole).Error; err != nil {
+		return nil, fmt.Errorf("failed to ensure default user role: %w", err)
+	}
+
+	var createdUserID uint
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		user := &models.User{Name: tempUser.Name, Email: tempUser.Email, Mobile: tempUser.Mobile, Password: tempUser.Password, CountryCode: tempUser.CountryCode, Dob: tempUser.Dob, DeviceToken: tempUser.DeviceToken, DeviceType: tempUser.DeviceType}
+		user := &models.User{
+			RoleID:      userRole.ID,
+			UserType:    constants.UserRole,
+			Name:        tempUser.Name,
+			Email:       tempUser.Email,
+			Mobile:      tempUser.Mobile,
+			Password:    tempUser.Password,
+			CountryCode: tempUser.CountryCode,
+			Dob:         tempUser.Dob,
+			DeviceToken: tempUser.DeviceToken,
+			DeviceType:  tempUser.DeviceType,
+		}
 		if err := tx.Create(user).Error; err != nil {
 			return err
 		}
-		tempUser.ID = user.ID
-		if err := tx.Delete(&tempUser).Error; err != nil {
+		createdUserID = user.ID
+		if err := tx.Delete(&models.TempUser{}, tempUser.ID).Error; err != nil {
 			return err
 		}
 		return tx.Delete(&otp).Error
@@ -75,7 +99,7 @@ func (s *otpService) Verify(ctx context.Context, req dto.VerifyOTPRequest) (*dto
 	if err != nil {
 		return nil, err
 	}
-	return &dto.UserRegisterResponse{ID: tempUser.ID, Name: tempUser.Name, Email: tempUser.Email, Mobile: tempUser.Mobile, CountryCode: tempUser.CountryCode, Dob: tempUser.Dob}, nil
+	return &dto.UserRegisterResponse{ID: createdUserID, Name: tempUser.Name, Email: tempUser.Email, Mobile: tempUser.Mobile, CountryCode: tempUser.CountryCode, Dob: tempUser.Dob}, nil
 }
 
 func generateOTP() (string, error) {

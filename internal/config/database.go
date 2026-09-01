@@ -101,6 +101,7 @@ func InitializeDatabase() error {
 	sqlDB.SetMaxOpenConns(dbConfig.DBMaxOpenConns)
 	sqlDB.SetMaxIdleConns(dbConfig.DBMaxIdleConns)
 	sqlDB.SetConnMaxLifetime(dbConfig.DBConnMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 	DB = db
 	return nil
 }

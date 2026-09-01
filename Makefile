@@ -1,7 +1,7 @@
 BINARY_DIR := bin
 API_BIN    := $(BINARY_DIR)/api
 
-.PHONY: build run dev start seed keygen tidy fmt vet test clean help docker-up docker-down docker-logs docker-rebuild docker-seed docker-keygen
+.PHONY: build run dev start seed keygen tidy cache-clean fmt vet test clean help docker-up docker-down docker-logs docker-rebuild docker-seed docker-keygen
 
 ## build: compile the API binary into bin/api (like `npm run build`)
 build:
@@ -32,6 +32,10 @@ keygen:
 tidy:
 	go mod tidy
 
+## cache-clean: remove build cache and module cache (wipes all downloaded packages)
+cache-clean:
+	go clean -modcache -cache
+   
 ## fmt: format all Go source files
 fmt:
 	go fmt ./...

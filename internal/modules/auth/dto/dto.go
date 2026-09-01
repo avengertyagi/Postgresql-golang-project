@@ -81,9 +81,9 @@ type UserRegisterRequest struct {
 }
 
 type VerifyOTPRequest struct {
-	TempUserID uint `json:"temp_user_id" binding:"required"`
-	EmailOTP   int  `json:"email_otp" binding:"required,len=6"`
-	MobileOTP  int  `json:"mobile_otp" binding:"required,len=6"`
+	TempUserID uint   `json:"temp_user_id" binding:"required"`
+	EmailOTP   string `json:"email_otp" binding:"required,len=6"`
+	MobileOTP  string `json:"mobile_otp" binding:"required,len=6"`
 }
 
 type UserRegisterResponse struct {
@@ -93,6 +93,6 @@ type UserRegisterResponse struct {
 	Mobile      int    `json:"mobile"`
 	CountryCode string `json:"country_code"`
 	Dob         string `json:"dob"`
-	EmailOTP    int    `json:"email_otp,omitempty"`
-	MobileOTP   int    `json:"mobile_otp,omitempty"`
+	EmailOTP    string `json:"email_otp,omitempty"`
+	MobileOTP   string `json:"mobile_otp,omitempty"`
 }

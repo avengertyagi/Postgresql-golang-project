@@ -48,7 +48,7 @@ func (ctl *UserController) Register(c *gin.Context) {
 		slog.Error("user register error", "error", err)
 		return
 	}
-	otpResponse, err := ctl.otp.Create(c.Request.Context(), &models.TempUser{Model: gorm.Model{ID: user.ID}, Email: user.Email, Mobile: user.Mobile})
+	otpResponse, err := ctl.otp.Create(c.Request.Context(), &models.TempUser{Model: gorm.Model{ID: user.ID}, Email: user.Email, Mobile: user.Mobile, CountryCode: user.CountryCode})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		return

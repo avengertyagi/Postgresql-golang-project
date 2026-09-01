@@ -34,10 +34,10 @@ func UserRegisterValidation(req dto.UserRegisterRequest) error {
 	if req.Name != "" && len(req.Name) > 50 {
 		return fmt.Errorf("Name cannot be longer than 50 characters.")
 	}
-	if req.Email == "" {
-		return fmt.Errorf("Email is required.")
-	}
-	if !regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`).MatchString(req.Email) {
+	// if req.Email == "" {
+	// 	return fmt.Errorf("Email is required.")
+	// }
+	if req.Email != "" && !regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`).MatchString(req.Email) {
 		return fmt.Errorf("Please enter a valid email address")
 	}
 	if req.Mobile == 0 {

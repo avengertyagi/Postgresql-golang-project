@@ -16,17 +16,17 @@ import (
 	staffrepositories "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/repositories"
 	staffservices "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/services"
 
-	websocketcontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/controllers"
-	websocketservices "github.com/akshit_tyagi/postgresql_project/internal/modules/websocket/services"
+	socketcontrollers "github.com/akshit_tyagi/postgresql_project/internal/modules/socket/controllers"
+	socketservices "github.com/akshit_tyagi/postgresql_project/internal/modules/socket/services"
 )
 
 type Container struct {
-	AdminController     *authcontrollers.AdminController
-	UserController      *usercontrollers.UserController
-	RoleController      *rolecontrollers.RoleController
-	StaffController     *staffcontrollers.StaffController
-	WebSocketController *websocketcontrollers.WebSocketController
-	WebSocketHub        *websocketservices.Hub
+	AdminController  *authcontrollers.AdminController
+	UserController   *usercontrollers.UserController
+	RoleController   *rolecontrollers.RoleController
+	StaffController  *staffcontrollers.StaffController
+	SocketController *socketcontrollers.SocketController
+	SocketHub        *socketservices.Hub
 }
 
 func NewContainer(db *gorm.DB) *Container {
@@ -46,16 +46,16 @@ func NewContainer(db *gorm.DB) *Container {
 	staffService := staffservices.NewStaffService(staffRepo, roleRepo)
 	staffController := staffcontrollers.NewStaffController(staffService)
 
-	websocketHub := websocketservices.NewHub()
-	go websocketHub.Run()
-	websocketController := websocketcontrollers.NewWebSocketController(websocketHub)
+	socketHub := socketservices.NewHub()
+	go socketHub.Run()
+	socketController := socketcontrollers.NewSocketController(socketHub)
 
 	return &Container{
-		AdminController:     adminController,
-		UserController:      userController,
-		RoleController:      roleController,
-		StaffController:     staffController,
-		WebSocketController: websocketController,
-		WebSocketHub:        websocketHub,
+		AdminController:  adminController,
+		UserController:   userController,
+		RoleController:   roleController,
+		StaffController:  staffController,
+		SocketController: socketController,
+		SocketHub:        socketHub,
 	}
 }
