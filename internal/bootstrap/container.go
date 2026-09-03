@@ -21,6 +21,7 @@ import (
 )
 
 type Container struct {
+	AuthRepo         authrepositories.AuthRepository
 	AdminController  *authcontrollers.AdminController
 	UserController   *usercontrollers.UserController
 	RoleController   *rolecontrollers.RoleController
@@ -51,6 +52,7 @@ func NewContainer(db *gorm.DB) *Container {
 	socketController := socketcontrollers.NewSocketController(socketHub)
 
 	return &Container{
+		AuthRepo:         authRepo,
 		AdminController:  adminController,
 		UserController:   userController,
 		RoleController:   roleController,

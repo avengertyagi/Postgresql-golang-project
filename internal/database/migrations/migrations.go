@@ -6,6 +6,7 @@ import (
 	permission "github.com/akshit_tyagi/postgresql_project/internal/modules/permission/models"
 	personalaccesstoken "github.com/akshit_tyagi/postgresql_project/internal/modules/personalaccesstoken/models"
 	role "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
+	theme "github.com/akshit_tyagi/postgresql_project/internal/modules/theme/models"
 )
 
 func Migrate() error {
@@ -16,5 +17,6 @@ func Migrate() error {
 		&user.TempUser{},
 		&user.OTP{},
 		&personalaccesstoken.PersonalAccessToken{},
+		&theme.Theme{},
 	)
 }

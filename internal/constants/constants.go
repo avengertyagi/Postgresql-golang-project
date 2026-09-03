@@ -15,12 +15,14 @@ const (
 
 var (
 	UserNotFound        = errors.New("User not found.")
+	InactiveAccount     = errors.New("Your account is inactive. Please contact support.")
 	AuthorizationHeader = errors.New("Authorization header is required.")
 	BadAuthFormat       = errors.New("Authorization format must be: Bearer <token>.")
 	Unauthenticated     = errors.New("Unauthenticated.")
+	Unauthorized        = errors.New("Unauthorized")
 	Forbidden           = errors.New("You do not have permission to access this resource.")
 	AccessDenied        = errors.New("Access denied for this guard.")
-	SessionNotFound     = errors.New("Session not found. Please login again.")
+	SessionNotFound     = errors.New("Your session has expired. Please login again.")
 
 	NotFound           = errors.New("Record not found.")
 	SomethingWentWrong = errors.New("Something went wrong. Please try again later.")
