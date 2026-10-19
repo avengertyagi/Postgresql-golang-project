@@ -12,20 +12,8 @@ import (
 	authrepo "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
 )
 
-type UserService interface {
-	Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserResponse, error)
-}
-
-type userService struct {
-	repo authrepo.AuthRepository
-}
-
-func NewUserService(r authrepo.AuthRepository) UserService {
-	return &userService{repo: r}
-}
-
-func (s *userService) Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserResponse, error) {
-	existingUser, err := s.repo.FindByEmail(ctx, req.Email)
+func RegisterUserDirect(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserResponse, error) {
+	existingUser, err := authrepo.FindByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, constants.UserNotFound) {
 		slog.Error("error checking existing user by email", "error", err)
 		return nil, err
@@ -33,7 +21,7 @@ func (s *userService) Register(ctx context.Context, req dto.UserRegisterRequest)
 	if existingUser != nil {
 		return nil, authconstants.EmailAlreadyExists
 	}
-	existingUser, err = s.repo.FindByMobile(ctx, req.Mobile)
+	existingUser, err = authrepo.FindByMobile(ctx, req.Mobile)
 	if err != nil && !errors.Is(err, constants.UserNotFound) {
 		slog.Error("error checking existing user by mobile", "error", err)
 		return nil, err
@@ -48,7 +36,7 @@ func (s *userService) Register(ctx context.Context, req dto.UserRegisterRequest)
 		CountryCode: req.CountryCode,
 		Dob:         req.Dob,
 	}
-	if err := s.repo.Create(ctx, user); err != nil {
+	if err := authrepo.Create(ctx, user); err != nil {
 		slog.Error("error creating user", "error", err)
 		return nil, err
 	}

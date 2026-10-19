@@ -44,6 +44,13 @@ const (
 	maxMessageLen = 512
 )
 
+var GlobalHub *Hub
+
+func init() {
+	GlobalHub = NewHub()
+	go GlobalHub.Run()
+}
+
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),

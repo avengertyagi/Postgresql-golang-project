@@ -15,21 +15,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type StaffController struct {
-	service staffservice.StaffService
-}
-
-func NewStaffController(s staffservice.StaffService) *StaffController {
-	return &StaffController{service: s}
-}
-
-func (ctl *StaffController) List(c *gin.Context) {
+func List(c *gin.Context) {
 	var query dto.PaginationQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	staffList, total, err := ctl.service.List(c.Request.Context(), query)
+	staffList, total, err := staffservice.List(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		slog.Error("staff list error", "error", err)
@@ -54,7 +46,7 @@ func (ctl *StaffController) List(c *gin.Context) {
 	})
 }
 
-func (ctl *StaffController) Create(c *gin.Context) {
+func Create(c *gin.Context) {
 	var req dto.StaffRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
@@ -64,7 +56,7 @@ func (ctl *StaffController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	staff, err := ctl.service.Create(c.Request.Context(), req)
+	staff, err := staffservice.Create(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, staffconstants.StaffAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error(), "data": gin.H{}})
@@ -86,13 +78,13 @@ func (ctl *StaffController) Create(c *gin.Context) {
 	})
 }
 
-func (ctl *StaffController) GetByID(c *gin.Context) {
+func GetByID(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.GetByID(c.Request.Context(), id)
+	role, err := staffservice.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if err == staffconstants.StaffNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": staffconstants.StaffNotFound.Error(), "data": gin.H{}})
@@ -110,7 +102,7 @@ func (ctl *StaffController) GetByID(c *gin.Context) {
 	})
 }
 
-func (ctl *StaffController) Update(c *gin.Context) {
+func Update(c *gin.Context) {
 	var req dto.StaffRequest
 	id, err := helpers.ParseID(c)
 	if err != nil {
@@ -125,7 +117,7 @@ func (ctl *StaffController) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.Update(c.Request.Context(), id, req)
+	role, err := staffservice.Update(c.Request.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, staffconstants.StaffNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": staffconstants.StaffNotFound.Error(), "data": gin.H{}})
@@ -151,13 +143,13 @@ func (ctl *StaffController) Update(c *gin.Context) {
 	})
 }
 
-func (ctl *StaffController) UpdateStatus(c *gin.Context) {
+func UpdateStatus(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.UpdateStatus(c.Request.Context(), id)
+	role, err := staffservice.UpdateStatus(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, staffconstants.StaffNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": staffconstants.StaffNotFound.Error(), "data": gin.H{}})
@@ -175,13 +167,13 @@ func (ctl *StaffController) UpdateStatus(c *gin.Context) {
 	})
 }
 
-func (ctl *StaffController) Delete(c *gin.Context) {
+func Delete(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.Delete(c.Request.Context(), id)
+	role, err := staffservice.Delete(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, staffconstants.StaffNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": staffconstants.StaffNotFound.Error(), "data": gin.H{}})

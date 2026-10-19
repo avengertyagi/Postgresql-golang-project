@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SocketRoutes(router *gin.RouterGroup, controller *controllers.SocketController) {
-	router.GET("/ws", controller.HandleSocket)
-	router.GET("/ws/stats", controller.GetStats)
+func SocketRoutes(router *gin.RouterGroup) {
+	router.GET("/ws", controllers.HandleSocket)
+	router.GET("/ws/stats", controllers.GetStats)
 }

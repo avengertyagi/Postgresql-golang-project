@@ -15,21 +15,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type RoleController struct {
-	service roleservice.RoleService
-}
-
-func NewRoleController(s roleservice.RoleService) *RoleController {
-	return &RoleController{service: s}
-}
-
-func (ctl *RoleController) List(c *gin.Context) {
+func List(c *gin.Context) {
 	var query dto.PaginationQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	roleList, total, err := ctl.service.List(c.Request.Context(), query)
+	roleList, total, err := roleservice.List(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		slog.Error("role list error", "error", err)
@@ -54,7 +46,7 @@ func (ctl *RoleController) List(c *gin.Context) {
 	})
 }
 
-func (ctl *RoleController) Create(c *gin.Context) {
+func Create(c *gin.Context) {
 	var req dto.RoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
@@ -64,7 +56,7 @@ func (ctl *RoleController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.Create(c.Request.Context(), req)
+	role, err := roleservice.Create(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, roleconstants.RoleAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error(), "data": gin.H{}})
@@ -82,13 +74,13 @@ func (ctl *RoleController) Create(c *gin.Context) {
 	})
 }
 
-func (ctl *RoleController) GetByID(c *gin.Context) {
+func GetByID(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.GetByID(c.Request.Context(), id)
+	role, err := roleservice.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if err == roleconstants.RoleNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": roleconstants.RoleNotFound.Error(), "data": gin.H{}})
@@ -106,7 +98,7 @@ func (ctl *RoleController) GetByID(c *gin.Context) {
 	})
 }
 
-func (ctl *RoleController) Update(c *gin.Context) {
+func Update(c *gin.Context) {
 	var req dto.RoleRequest
 	id, err := helpers.ParseID(c)
 	if err != nil {
@@ -121,7 +113,7 @@ func (ctl *RoleController) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.Update(c.Request.Context(), id, req)
+	role, err := roleservice.Update(c.Request.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, roleconstants.RoleNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": roleconstants.RoleNotFound.Error(), "data": gin.H{}})
@@ -143,13 +135,13 @@ func (ctl *RoleController) Update(c *gin.Context) {
 	})
 }
 
-func (ctl *RoleController) UpdateStatus(c *gin.Context) {
+func UpdateStatus(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.UpdateStatus(c.Request.Context(), id)
+	role, err := roleservice.UpdateStatus(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, roleconstants.RoleNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": roleconstants.RoleNotFound.Error(), "data": gin.H{}})
@@ -167,13 +159,13 @@ func (ctl *RoleController) UpdateStatus(c *gin.Context) {
 	})
 }
 
-func (ctl *RoleController) Delete(c *gin.Context) {
+func Delete(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	role, err := ctl.service.Delete(c.Request.Context(), id)
+	role, err := roleservice.Delete(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, roleconstants.RoleNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": roleconstants.RoleNotFound.Error(), "data": gin.H{}})

@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(repo authrepo.AuthRepository) gin.HandlerFunc {
+func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -39,7 +39,7 @@ func AuthMiddleware(repo authrepo.AuthRepository) gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.SessionNotFound.Error()})
 			return
 		}
-		user, err := repo.FindByID(c.Request.Context(), claims.UserID)
+		user, err := authrepo.FindByID(c.Request.Context(), claims.UserID)
 		if err != nil {
 			slog.Warn("auth: user not found",
 				"request_id", requestid.Get(c),

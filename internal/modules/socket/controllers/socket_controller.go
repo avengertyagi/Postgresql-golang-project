@@ -10,17 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SocketController struct {
-	hub *services.Hub
-}
-
-func NewSocketController(hub *services.Hub) *SocketController {
-	return &SocketController{
-		hub: hub,
-	}
-}
-
-func (sc *SocketController) HandleSocket(c *gin.Context) {
+func HandleSocket(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
 		slog.Warn("WebSocket: missing token",
@@ -65,8 +55,8 @@ func (sc *SocketController) HandleSocket(c *gin.Context) {
 	userID := c.GetString("user_id")
 	userName := claims.Email
 
-	client := sc.hub.NewClient(conn, userID, userName)
-	sc.hub.Register <- client
+	client := services.GlobalHub.NewClient(conn, userID, userName)
+	services.GlobalHub.Register <- client
 
 	slog.Info("New WebSocket connection",
 		"user_id", userID,
@@ -77,8 +67,8 @@ func (sc *SocketController) HandleSocket(c *gin.Context) {
 	go client.WritePump()
 }
 
-func (sc *SocketController) GetStats(c *gin.Context) {
-	connectedClients := sc.hub.GetConnectedClients()
+func GetStats(c *gin.Context) {
+	connectedClients := services.GlobalHub.GetConnectedClients()
 	c.JSON(http.StatusOK, gin.H{
 		"status":            true,
 		"connected_clients": connectedClients,

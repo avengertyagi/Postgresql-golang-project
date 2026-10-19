@@ -19,25 +19,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AdminService interface {
-	Login(ctx context.Context, req dto.AdminLoginRequest) (*dto.AdminResponse, error)
-	Logout(ctx context.Context, refreshToken string) error
-	RefreshToken(ctx context.Context, refreshToken string) (*dto.TokenRefreshResponse, error)
-	GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error)
-	UpdateProfile(ctx context.Context, userID uint, req dto.AdminUpdateProfileRequest, profilePictureFile interface{}) (*dto.ProfileResponse, error)
-}
-type authService struct {
-	repo authrepo.AuthRepository
-}
-
-func NewAuthService(repo authrepo.AuthRepository) AdminService {
-	return &authService{repo: repo}
-}
-
 const dummyBcryptHash = "$2a$10$CwTycUXWue0Thq9StjUM0uJ8Kge0G9wORUiC5MzHzWMbc8dV/xhHy"
 
-func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dto.AdminResponse, error) {
-	admin, err := s.repo.FindByEmail(ctx, req.Email)
+func Login(ctx context.Context, req dto.AdminLoginRequest) (*dto.AdminResponse, error) {
+	admin, err := authrepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		_ = bcrypt.CompareHashAndPassword([]byte(dummyBcryptHash), []byte(req.Password))
 		return nil, authconstants.InvalidCredentials
@@ -50,7 +35,7 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 		return nil, authconstants.InvalidCredentials
 	}
 	userID := admin.ID
-	permissions := s.repo.GetUserPermissions(ctx, admin)
+	permissions := authrepo.GetUserPermissions(ctx, admin)
 	accessToken, err := helpers.GenerateAccessToken(
 		userID,
 		admin.Email,
@@ -77,7 +62,7 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 		Revoked:   false,
 		ExpiresAt: time.Now().Add(time.Duration(expiryDays) * 24 * time.Hour),
 	}
-	if err := s.repo.SaveToken(ctx, pat); err != nil {
+	if err := authrepo.SaveToken(ctx, pat); err != nil {
 		return nil, errors.New("Failed to create session")
 	}
 	accessExpiryMinutes, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_EXPIRY_MINUTES"))
@@ -95,12 +80,12 @@ func (s *authService) Login(ctx context.Context, req dto.AdminLoginRequest) (*dt
 	}, nil
 }
 
-func (s *authService) Logout(ctx context.Context, refreshToken string) error {
+func Logout(ctx context.Context, refreshToken string) error {
 	if _, err := helpers.ParseRefreshToken(refreshToken); err != nil {
 		return authconstants.SessionNotFound
 	}
 	tokenHash := helpers.HashToken(refreshToken)
-	pat, err := s.repo.FindTokenByHash(ctx, tokenHash)
+	pat, err := authrepo.FindTokenByHash(ctx, tokenHash)
 	if err != nil {
 		return authconstants.SessionNotFound
 	}
@@ -110,18 +95,18 @@ func (s *authService) Logout(ctx context.Context, refreshToken string) error {
 	if time.Now().After(pat.ExpiresAt) {
 		return authconstants.SessionExpired
 	}
-	if err := s.repo.RevokeRefreshToken(ctx, tokenHash); err != nil {
+	if err := authrepo.RevokeRefreshToken(ctx, tokenHash); err != nil {
 		return constants.SomethingWentWrong
 	}
 	return nil
 }
 
-func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) (*dto.TokenRefreshResponse, error) {
+func RefreshToken(ctx context.Context, rawRefreshToken string) (*dto.TokenRefreshResponse, error) {
 	claims, err := helpers.ParseRefreshToken(rawRefreshToken)
 	if err != nil {
 		return nil, authconstants.SessionNotFound
 	}
-	pat, err := s.repo.FindTokenByHash(ctx, helpers.HashToken(rawRefreshToken))
+	pat, err := authrepo.FindTokenByHash(ctx, helpers.HashToken(rawRefreshToken))
 	if err != nil {
 		return nil, errors.New("Session not found")
 	}
@@ -131,11 +116,11 @@ func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) 
 	if time.Now().After(pat.ExpiresAt) {
 		return nil, errors.New("Session has expired")
 	}
-	admin, err := s.repo.FindByID(ctx, claims.UserID)
+	admin, err := authrepo.FindByID(ctx, claims.UserID)
 	if err != nil {
 		return nil, constants.UserNotFound
 	}
-	permissions := s.repo.GetUserPermissions(ctx, admin)
+	permissions := authrepo.GetUserPermissions(ctx, admin)
 	newAccessToken, err := helpers.GenerateAccessToken(
 		claims.UserID,
 		admin.Email,
@@ -157,8 +142,8 @@ func (s *authService) RefreshToken(ctx context.Context, rawRefreshToken string) 
 	}, nil
 }
 
-func (s *authService) GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
-	user, err := s.repo.FindByID(ctx, userID)
+func GetProfile(ctx context.Context, userID uint) (*dto.ProfileResponse, error) {
+	user, err := authrepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, constants.NotFound
 	}
@@ -174,8 +159,8 @@ func (s *authService) GetProfile(ctx context.Context, userID uint) (*dto.Profile
 	}, nil
 }
 
-func (s *authService) UpdateProfile(ctx context.Context, userID uint, req dto.AdminUpdateProfileRequest, profilePictureFile interface{}) (*dto.ProfileResponse, error) {
-	user, err := s.repo.FindByID(ctx, userID)
+func UpdateProfile(ctx context.Context, userID uint, req dto.AdminUpdateProfileRequest, profilePictureFile interface{}) (*dto.ProfileResponse, error) {
+	user, err := authrepo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, constants.NotFound
 	}
@@ -197,8 +182,8 @@ func (s *authService) UpdateProfile(ctx context.Context, userID uint, req dto.Ad
 		user.ProfilePicture = result.URL
 	}
 
-	if err := s.repo.Update(ctx, user); err != nil {
+	if err := authrepo.Update(ctx, user); err != nil {
 		return nil, constants.SomethingWentWrong
 	}
-	return s.GetProfile(ctx, userID)
+	return GetProfile(ctx, userID)
 }

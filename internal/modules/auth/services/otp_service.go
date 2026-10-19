@@ -8,29 +8,15 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	"github.com/akshit_tyagi/postgresql_project/internal/constants"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/dto"
 	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
-	"github.com/akshit_tyagi/postgresql_project/internal/modules/auth/repositories"
 	rolemodel "github.com/akshit_tyagi/postgresql_project/internal/modules/role/models"
 	"gorm.io/gorm"
 )
 
-type OTPService interface {
-	Create(ctx context.Context, user *models.TempUser) (*dto.UserRegisterResponse, error)
-	Verify(ctx context.Context, req dto.VerifyOTPRequest) (*dto.UserRegisterResponse, error)
-}
-
-type otpService struct {
-	db       *gorm.DB
-	tempRepo repositories.TempUserRepository
-}
-
-func NewOTPService(db *gorm.DB, tempRepo repositories.TempUserRepository) OTPService {
-	return &otpService{db: db, tempRepo: tempRepo}
-}
-
-func (s *otpService) Create(ctx context.Context, user *models.TempUser) (*dto.UserRegisterResponse, error) {
+func CreateOTP(ctx context.Context, user *models.TempUser) (*dto.UserRegisterResponse, error) {
 	emailCode, err := generateOTP()
 	if err != nil {
 		return nil, err
@@ -44,7 +30,7 @@ func (s *otpService) Create(ctx context.Context, user *models.TempUser) (*dto.Us
 		mobileCode = generatedMobileCode
 	}
 	otp := &models.OTP{TempUserID: user.ID, EmailCode: emailCode, MobileCode: mobileCode, ExpiresAt: time.Now().Add(10 * time.Minute)}
-	if err := s.db.WithContext(ctx).Where("temp_user_id = ?", user.ID).Assign(ototpValues(otp)).FirstOrCreate(otp).Error; err != nil {
+	if err := config.DB.WithContext(ctx).Where("temp_user_id = ?", user.ID).Assign(ototpValues(otp)).FirstOrCreate(otp).Error; err != nil {
 		return nil, err
 	}
 	slog.Info("registration OTP generated", "email", user.Email, "mobile", user.Mobile, "email_otp", emailCode, "mobile_otp", mobileCode)
@@ -55,13 +41,13 @@ func ototpValues(otp *models.OTP) map[string]interface{} {
 	return map[string]interface{}{"email_code": otp.EmailCode, "mobile_code": otp.MobileCode, "expires_at": otp.ExpiresAt}
 }
 
-func (s *otpService) Verify(ctx context.Context, req dto.VerifyOTPRequest) (*dto.UserRegisterResponse, error) {
+func VerifyOTP(ctx context.Context, req dto.VerifyOTPRequest) (*dto.UserRegisterResponse, error) {
 	var tempUser models.TempUser
 	var otp models.OTP
-	if err := s.db.WithContext(ctx).First(&tempUser, req.TempUserID).Error; err != nil {
+	if err := config.DB.WithContext(ctx).First(&tempUser, req.TempUserID).Error; err != nil {
 		return nil, err
 	}
-	if err := s.db.WithContext(ctx).Where("temp_user_id = ?", req.TempUserID).First(&otp).Error; err != nil {
+	if err := config.DB.WithContext(ctx).Where("temp_user_id = ?", req.TempUserID).First(&otp).Error; err != nil {
 		return nil, err
 	}
 	if time.Now().After(otp.ExpiresAt) || otp.EmailCode != req.EmailOTP || otp.MobileCode != req.MobileOTP {
@@ -69,12 +55,12 @@ func (s *otpService) Verify(ctx context.Context, req dto.VerifyOTPRequest) (*dto
 	}
 
 	var userRole rolemodel.Role
-	if err := s.db.WithContext(ctx).Where("name = ?", "User").FirstOrCreate(&userRole).Error; err != nil {
+	if err := config.DB.WithContext(ctx).Where("name = ?", "User").FirstOrCreate(&userRole).Error; err != nil {
 		return nil, fmt.Errorf("failed to ensure default user role: %w", err)
 	}
 
 	var createdUserID uint
-	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	err := config.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		user := &models.User{
 			RoleID:      userRole.ID,
 			UserType:    constants.UserRole,

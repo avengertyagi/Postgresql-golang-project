@@ -45,7 +45,6 @@ This project is a production-ready backend API that provides:
 │   ├── keygen/                   # Key generation utility
 │   └── seeder/                   # Database seeder
 ├── internal/                     # Internal packages
-│   ├── bootstrap/                # Dependency injection container
 │   ├── common/                   # Common utilities
 │   ├── config/                   # Configuration management
 │   │   ├── app.go               # App configuration

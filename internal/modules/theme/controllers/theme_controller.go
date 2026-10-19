@@ -15,21 +15,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ThemeController struct {
-	service themeservice.ThemeService
-}
-
-func NewThemeController(s themeservice.ThemeService) *ThemeController {
-	return &ThemeController{service: s}
-}
-
-func (ctl *ThemeController) List(c *gin.Context) {
+func List(c *gin.Context) {
 	var query dto.PaginationQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	themeList, total, err := ctl.service.List(c.Request.Context(), query)
+	themeList, total, err := themeservice.List(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		slog.Error("theme list error", "error", err)
@@ -54,7 +46,7 @@ func (ctl *ThemeController) List(c *gin.Context) {
 	})
 }
 
-func (ctl *ThemeController) Create(c *gin.Context) {
+func Create(c *gin.Context) {
 	var req dto.ThemeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
@@ -64,7 +56,7 @@ func (ctl *ThemeController) Create(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	theme, err := ctl.service.Create(c.Request.Context(), req)
+	theme, err := themeservice.Create(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, themeconstants.ThemeAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error(), "data": gin.H{}})
@@ -82,13 +74,13 @@ func (ctl *ThemeController) Create(c *gin.Context) {
 	})
 }
 
-func (ctl *ThemeController) GetByID(c *gin.Context) {
+func GetByID(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	theme, err := ctl.service.GetByID(c.Request.Context(), id)
+	theme, err := themeservice.GetByID(c.Request.Context(), id)
 	if err != nil {
 		if err == themeconstants.ThemeNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": themeconstants.ThemeNotFound.Error(), "data": gin.H{}})
@@ -106,7 +98,7 @@ func (ctl *ThemeController) GetByID(c *gin.Context) {
 	})
 }
 
-func (ctl *ThemeController) Update(c *gin.Context) {
+func Update(c *gin.Context) {
 	var req dto.ThemeRequest
 	id, err := helpers.ParseID(c)
 	if err != nil {
@@ -121,7 +113,7 @@ func (ctl *ThemeController) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	theme, err := ctl.service.Update(c.Request.Context(), id, req)
+	theme, err := themeservice.Update(c.Request.Context(), id, req)
 	if err != nil {
 		if errors.Is(err, themeconstants.ThemeNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": themeconstants.ThemeNotFound.Error(), "data": gin.H{}})
@@ -143,13 +135,13 @@ func (ctl *ThemeController) Update(c *gin.Context) {
 	})
 }
 
-func (ctl *ThemeController) UpdateStatus(c *gin.Context) {
+func UpdateStatus(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	theme, err := ctl.service.UpdateStatus(c.Request.Context(), id)
+	theme, err := themeservice.UpdateStatus(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, themeconstants.ThemeNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": themeconstants.ThemeNotFound.Error(), "data": gin.H{}})
@@ -167,13 +159,13 @@ func (ctl *ThemeController) UpdateStatus(c *gin.Context) {
 	})
 }
 
-func (ctl *ThemeController) Delete(c *gin.Context) {
+func Delete(c *gin.Context) {
 	id, err := helpers.ParseID(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	theme, err := ctl.service.Delete(c.Request.Context(), id)
+	theme, err := themeservice.Delete(c.Request.Context(), id)
 	if err != nil {
 		if errors.Is(err, themeconstants.ThemeNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": themeconstants.ThemeNotFound.Error(), "data": gin.H{}})

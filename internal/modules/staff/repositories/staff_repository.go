@@ -4,38 +4,21 @@ import (
 	"context"
 	"errors"
 
+	"github.com/akshit_tyagi/postgresql_project/internal/config"
 	usermodel "github.com/akshit_tyagi/postgresql_project/internal/modules/auth/models"
 	staffconstants "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/constants"
 	dto "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/dto"
 	"gorm.io/gorm"
 )
 
-type StaffRepository interface {
-	Create(ctx context.Context, staff *usermodel.User) error
-	FindByID(ctx context.Context, id uint) (*usermodel.User, error)
-	FindByName(ctx context.Context, name string) (*usermodel.User, error)
-	FindAll(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error)
-	Update(ctx context.Context, staff *usermodel.User) error
-	Delete(ctx context.Context, id uint) error
-	ExistsByMobile(ctx context.Context, mobile int, excludeID uint) (bool, error)
+func Create(ctx context.Context, user *usermodel.User) error {
+	return config.DB.WithContext(ctx).Create(user).Error
 }
 
-type staffRepository struct {
-	db *gorm.DB
-}
-
-func NewStaffRepository(db *gorm.DB) StaffRepository {
-	return &staffRepository{db: db}
-}
-
-func (r *staffRepository) Create(ctx context.Context, user *usermodel.User) error {
-	return r.db.WithContext(ctx).Create(user).Error
-}
-
-func (r *staffRepository) FindAll(ctx context.Context, query dto.PaginationQuery) ([]usermodel.User, int64, error) {
+func FindAll(ctx context.Context, query dto.PaginationQuery) ([]usermodel.User, int64, error) {
 	var total int64
 	var users []usermodel.User
-	staffQuery := r.db.WithContext(ctx).Model(&usermodel.User{})
+	staffQuery := config.DB.WithContext(ctx).Model(&usermodel.User{})
 	if query.Search != "" {
 		staffQuery = staffQuery.Where("LOWER(name) LIKE LOWER(?)", "%"+query.Search+"%")
 	}
@@ -51,15 +34,14 @@ func (r *staffRepository) FindAll(ctx context.Context, query dto.PaginationQuery
 		return nil, 0, err
 	}
 	return users, total, nil
-
 }
 
-func (r *staffRepository) Update(ctx context.Context, user *usermodel.User) error {
-	return r.db.WithContext(ctx).Save(user).Error
+func Update(ctx context.Context, user *usermodel.User) error {
+	return config.DB.WithContext(ctx).Save(user).Error
 }
 
-func (r *staffRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&usermodel.User{}, id)
+func Delete(ctx context.Context, id uint) error {
+	result := config.DB.WithContext(ctx).Delete(&usermodel.User{}, id)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -67,25 +49,11 @@ func (r *staffRepository) Delete(ctx context.Context, id uint) error {
 		return staffconstants.StaffNotFound
 	}
 	return nil
-
 }
 
-func (r *staffRepository) FindByID(ctx context.Context, id uint) (*usermodel.User, error) {
+func FindByID(ctx context.Context, id uint) (*usermodel.User, error) {
 	var user usermodel.User
-	err := r.db.WithContext(ctx).First(&user, id).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, staffconstants.StaffNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-
-}
-
-func (r *staffRepository) FindByName(ctx context.Context, name string) (*usermodel.User, error) {
-	var user usermodel.User
-	err := r.db.WithContext(ctx).Where("name = ?", name).First(&user).Error
+	err := config.DB.WithContext(ctx).First(&user, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, staffconstants.StaffNotFound
 	}
@@ -95,9 +63,21 @@ func (r *staffRepository) FindByName(ctx context.Context, name string) (*usermod
 	return &user, nil
 }
 
-func (r *staffRepository) ExistsByMobile(ctx context.Context, mobile int, excludeID uint) (bool, error) {
+func FindByName(ctx context.Context, name string) (*usermodel.User, error) {
+	var user usermodel.User
+	err := config.DB.WithContext(ctx).Where("name = ?", name).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, staffconstants.StaffNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func ExistsByMobile(ctx context.Context, mobile int, excludeID uint) (bool, error) {
 	var count int64
-	q := r.db.WithContext(ctx).Model(&usermodel.User{}).Where("mobile = ?", mobile)
+	q := config.DB.WithContext(ctx).Model(&usermodel.User{}).Where("mobile = ?", mobile)
 	if excludeID > 0 {
 		q = q.Where("id <> ?", excludeID)
 	}

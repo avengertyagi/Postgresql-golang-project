@@ -11,39 +11,21 @@ import (
 	staffrepo "github.com/akshit_tyagi/postgresql_project/internal/modules/staff/repositories"
 )
 
-type StaffService interface {
-	Create(ctx context.Context, req dto.StaffRequest) (*usermodel.User, error)
-	GetByID(ctx context.Context, id uint) (*usermodel.User, error)
-	List(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error)
-	Update(ctx context.Context, id uint, req dto.StaffRequest) (*usermodel.User, error)
-	UpdateStatus(ctx context.Context, id uint) (*usermodel.User, error)
-	Delete(ctx context.Context, id uint) (*usermodel.User, error)
+func List(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error) {
+	return staffrepo.FindAll(ctx, q)
 }
 
-type staffService struct {
-	staffRepo staffrepo.StaffRepository
-	roleRepo  rolerepo.RoleRepository
-}
-
-func NewStaffService(staffRepo staffrepo.StaffRepository, roleRepo rolerepo.RoleRepository) StaffService {
-	return &staffService{staffRepo: staffRepo, roleRepo: roleRepo}
-}
-
-func (s *staffService) List(ctx context.Context, q dto.PaginationQuery) ([]usermodel.User, int64, error) {
-	return s.staffRepo.FindAll(ctx, q)
-}
-
-func (s *staffService) Create(ctx context.Context, req dto.StaffRequest) (*usermodel.User, error) {
+func Create(ctx context.Context, req dto.StaffRequest) (*usermodel.User, error) {
 	name := strings.TrimSpace(req.Name)
-	exists, err := s.staffRepo.ExistsByMobile(ctx, req.Mobile, 0)
+	exists, err := staffrepo.ExistsByMobile(ctx, req.Mobile, 0)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
 		return nil, staffconstants.StaffAlreadyExists
 	}
-	role, err := s.roleRepo.FindByID(ctx, req.RoleID)
-	if role == nil {
+	role, err := rolerepo.FindByID(ctx, req.RoleID)
+	if err != nil || role == nil {
 		return nil, staffconstants.RoleIdNotFound
 	}
 
@@ -57,23 +39,23 @@ func (s *staffService) Create(ctx context.Context, req dto.StaffRequest) (*userm
 	if err := staff.HashPassword(req.Password); err != nil {
 		return nil, err
 	}
-	if err := s.staffRepo.Create(ctx, staff); err != nil {
+	if err := staffrepo.Create(ctx, staff); err != nil {
 		return nil, err
 	}
 	return staff, nil
 }
 
-func (s *staffService) GetByID(ctx context.Context, id uint) (*usermodel.User, error) {
-	return s.staffRepo.FindByID(ctx, id)
+func GetByID(ctx context.Context, id uint) (*usermodel.User, error) {
+	return staffrepo.FindByID(ctx, id)
 }
 
-func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest) (*usermodel.User, error) {
-	staff, err := s.staffRepo.FindByID(ctx, id)
+func Update(ctx context.Context, id uint, req dto.StaffRequest) (*usermodel.User, error) {
+	staff, err := staffrepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	name := strings.TrimSpace(req.Name)
-	exists, err := s.staffRepo.ExistsByMobile(ctx, req.Mobile, id)
+	exists, err := staffrepo.ExistsByMobile(ctx, req.Mobile, id)
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +63,8 @@ func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest
 		return nil, staffconstants.StaffAlreadyExists
 	}
 	staff.Name = name
-	role, err := s.roleRepo.FindByID(ctx, req.RoleID)
-	if role == nil {
+	role, err := rolerepo.FindByID(ctx, req.RoleID)
+	if err != nil || role == nil {
 		return nil, staffconstants.RoleIdNotFound
 	}
 	staff.Email = req.Email
@@ -93,31 +75,31 @@ func (s *staffService) Update(ctx context.Context, id uint, req dto.StaffRequest
 			return nil, err
 		}
 	}
-	if err := s.staffRepo.Update(ctx, staff); err != nil {
+	if err := staffrepo.Update(ctx, staff); err != nil {
 		return nil, err
 	}
 
 	return staff, nil
 }
 
-func (s *staffService) UpdateStatus(ctx context.Context, id uint) (*usermodel.User, error) {
-	staff, err := s.staffRepo.FindByID(ctx, id)
+func UpdateStatus(ctx context.Context, id uint) (*usermodel.User, error) {
+	staff, err := staffrepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	staff.Status = !staff.Status
-	if err := s.staffRepo.Update(ctx, staff); err != nil {
+	if err := staffrepo.Update(ctx, staff); err != nil {
 		return nil, err
 	}
 	return staff, nil
 }
 
-func (s *staffService) Delete(ctx context.Context, id uint) (*usermodel.User, error) {
-	staff, err := s.staffRepo.FindByID(ctx, id)
+func Delete(ctx context.Context, id uint) (*usermodel.User, error) {
+	staff, err := staffrepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.staffRepo.Delete(ctx, id); err != nil {
+	if err := staffrepo.Delete(ctx, id); err != nil {
 		return nil, err
 	}
 	return staff, nil

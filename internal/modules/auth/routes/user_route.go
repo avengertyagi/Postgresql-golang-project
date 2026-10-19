@@ -5,8 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UserRoutes(r *gin.RouterGroup, controller *usercontroller.UserController) {
+func UserRoutes(r *gin.RouterGroup) {
 	auth := r.Group("auth")
-	auth.POST("/register", controller.Register)
-	auth.POST("/verify-otp", controller.VerifyOTP)
+	auth.POST("/register", usercontroller.Register)
+	auth.POST("/verify-otp", usercontroller.VerifyOTP)
 }

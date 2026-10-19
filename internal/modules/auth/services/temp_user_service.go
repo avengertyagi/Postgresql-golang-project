@@ -15,34 +15,21 @@ import (
 	"gorm.io/gorm"
 )
 
-type TempUserService interface {
-	Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserRegisterResponse, error)
-}
-
-type tempUserService struct {
-	repo     tempuserrepo.TempUserRepository
-	authRepo authrepo.AuthRepository
-}
-
-func NewTempUserService(r tempuserrepo.TempUserRepository, ar authrepo.AuthRepository) TempUserService {
-	return &tempUserService{repo: r, authRepo: ar}
-}
-
-func (s *tempUserService) Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserRegisterResponse, error) {
-	existingUser, err := s.authRepo.FindByEmail(ctx, req.Email)
+func Register(ctx context.Context, req dto.UserRegisterRequest) (*dto.UserRegisterResponse, error) {
+	existingUser, _ := authrepo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return nil, authconstants.EmailAlreadyExists
 	}
-	existingUser, err = s.authRepo.FindByMobile(ctx, req.Mobile)
+	existingUser, _ = authrepo.FindByMobile(ctx, req.Mobile)
 	if existingUser != nil {
 		return nil, authconstants.MobileAlreadyExists
 	}
-	if existingTemp, tempErr := s.repo.FindByEmail(ctx, req.Email); tempErr == nil && existingTemp != nil {
+	if existingTemp, tempErr := tempuserrepo.FindTempUserByEmail(ctx, req.Email); tempErr == nil && existingTemp != nil {
 		return nil, authconstants.EmailAlreadyExists
 	} else if tempErr != nil && !errors.Is(tempErr, gorm.ErrRecordNotFound) {
 		return nil, tempErr
 	}
-	if existingTemp, tempErr := s.repo.FindByMobile(ctx, req.Mobile); tempErr == nil && existingTemp != nil {
+	if existingTemp, tempErr := tempuserrepo.FindTempUserByMobile(ctx, req.Mobile); tempErr == nil && existingTemp != nil {
 		return nil, authconstants.MobileAlreadyExists
 	} else if tempErr != nil && !errors.Is(tempErr, gorm.ErrRecordNotFound) {
 		return nil, tempErr
@@ -60,7 +47,7 @@ func (s *tempUserService) Register(ctx context.Context, req dto.UserRegisterRequ
 		Password:    string(hashedPassword),
 		UserType:    constants.UserRole,
 	}
-	if err := s.repo.Create(ctx, user); err != nil {
+	if err := tempuserrepo.CreateTempUser(ctx, user); err != nil {
 		slog.Error("error creating user", "error", err)
 		return nil, err
 	}

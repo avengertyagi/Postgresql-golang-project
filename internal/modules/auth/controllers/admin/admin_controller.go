@@ -13,14 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AdminController struct {
-	service adminservice.AdminService
-}
-
-func NewAuthController(s adminservice.AdminService) *AdminController {
-	return &AdminController{service: s}
-}
-func (ctl *AdminController) Login(c *gin.Context) {
+func Login(c *gin.Context) {
 	var req dto.AdminLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
@@ -30,7 +23,7 @@ func (ctl *AdminController) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	admin, err := ctl.service.Login(c.Request.Context(), req)
+	admin, err := adminservice.Login(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, authconstants.InvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
@@ -47,13 +40,13 @@ func (ctl *AdminController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": authconstants.LoginSuccess.Error(), "data": *admin})
 }
 
-func (ctl *AdminController) Logout(c *gin.Context) {
+func Logout(c *gin.Context) {
 	var req dto.LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
-	if err := ctl.service.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+	if err := adminservice.Logout(c.Request.Context(), req.RefreshToken); err != nil {
 		if errors.Is(err, authconstants.SessionNotFound) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
 			return
@@ -73,13 +66,13 @@ func (ctl *AdminController) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": authconstants.LogoutSuccess.Error(), "data": gin.H{}})
 }
 
-func (ctl *AdminController) RefreshToken(c *gin.Context) {
+func RefreshToken(c *gin.Context) {
 	var req dto.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
-	resp, err := ctl.service.RefreshToken(c.Request.Context(), req.RefreshToken)
+	resp, err := adminservice.RefreshToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
 		if errors.Is(err, authconstants.SessionNotFound) {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": err.Error(), "data": gin.H{}})
@@ -105,7 +98,7 @@ func (ctl *AdminController) RefreshToken(c *gin.Context) {
 	})
 }
 
-func (ctl *AdminController) GetProfile(c *gin.Context) {
+func GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error(), "data": gin.H{}})
@@ -116,7 +109,7 @@ func (ctl *AdminController) GetProfile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"status": false, "statusCode": http.StatusUnauthorized, "message": constants.Unauthenticated.Error(), "data": gin.H{}})
 		return
 	}
-	profile, err := ctl.service.GetProfile(c.Request.Context(), id)
+	profile, err := adminservice.GetProfile(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.NotFound.Error(), "data": gin.H{}})
 		return
@@ -129,7 +122,7 @@ func (ctl *AdminController) GetProfile(c *gin.Context) {
 	})
 }
 
-func (ctl *AdminController) UpdateProfile(c *gin.Context) {
+func UpdateProfile(c *gin.Context) {
 	var req dto.AdminUpdateProfileRequest
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
@@ -154,7 +147,7 @@ func (ctl *AdminController) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	profile, err := ctl.service.UpdateProfile(c.Request.Context(), id, req, profilePictureFile)
+	profile, err := adminservice.UpdateProfile(c.Request.Context(), id, req, profilePictureFile)
 	if err != nil {
 		if errors.Is(err, constants.NotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"status": false, "statusCode": http.StatusNotFound, "message": constants.NotFound.Error(), "data": gin.H{}})

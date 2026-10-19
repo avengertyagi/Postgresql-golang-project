@@ -15,16 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type UserController struct {
-	service userservice.TempUserService
-	otp     userservice.OTPService
-}
-
-func NewUserController(s userservice.TempUserService, otp userservice.OTPService) *UserController {
-	return &UserController{service: s, otp: otp}
-}
-
-func (ctl *UserController) Register(c *gin.Context) {
+func Register(c *gin.Context) {
 	var req dto.UserRegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error() + ": " + err.Error(), "data": gin.H{}})
@@ -34,7 +25,7 @@ func (ctl *UserController) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
 	}
-	user, err := ctl.service.Register(c.Request.Context(), req)
+	user, err := userservice.Register(c.Request.Context(), req)
 	if err != nil {
 		if errors.Is(err, authconstants.EmailAlreadyExists) {
 			c.JSON(http.StatusConflict, gin.H{"status": false, "statusCode": http.StatusConflict, "message": err.Error(), "data": gin.H{}})
@@ -48,7 +39,7 @@ func (ctl *UserController) Register(c *gin.Context) {
 		slog.Error("user register error", "error", err)
 		return
 	}
-	otpResponse, err := ctl.otp.Create(c.Request.Context(), &models.TempUser{Model: gorm.Model{ID: user.ID}, Email: user.Email, Mobile: user.Mobile, CountryCode: user.CountryCode})
+	otpResponse, err := userservice.CreateOTP(c.Request.Context(), &models.TempUser{Model: gorm.Model{ID: user.ID}, Email: user.Email, Mobile: user.Mobile, CountryCode: user.CountryCode})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": false, "statusCode": http.StatusInternalServerError, "message": constants.SomethingWentWrong.Error(), "data": gin.H{}})
 		return
@@ -58,13 +49,13 @@ func (ctl *UserController) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": true, "statusCode": http.StatusOK, "message": authconstants.SignUpSuccess.Error(), "data": *user})
 }
 
-func (ctl *UserController) VerifyOTP(c *gin.Context) {
+func VerifyOTP(c *gin.Context) {
 	var req dto.VerifyOTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": constants.InvalidRequestBody.Error(), "data": gin.H{}})
 		return
 	}
-	user, err := ctl.otp.Verify(c.Request.Context(), req)
+	user, err := userservice.VerifyOTP(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": false, "statusCode": http.StatusBadRequest, "message": err.Error(), "data": gin.H{}})
 		return
